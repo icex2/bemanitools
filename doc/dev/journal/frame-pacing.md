@@ -17,6 +17,7 @@ have code snippets of:
   * specifically depict monitor check
 * sound processing (???)
   * depict fixed frame rate thing
+  * dsound vs. wasapi/asio in later games(?)
 
 TODO separate section to properly outline the engine generations. base the entire article on that
 and outline each generation regarding hardware used/software, IO, code snippets and problems

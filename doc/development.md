@@ -28,6 +28,8 @@ On MacOSX, you can use homebrew or macports to install these packages.
 #### Windows
 TODO
 
+TODO currently None of the main devs works on windows with this
+
 ### IDE
 Ultimately, you are free to use whatever you feel comfortable with for development. The following is our preferred
 development environment which we run on a Linux distribution of our choice:
@@ -42,6 +44,18 @@ development environment which we run on a Linux distribution of our choice:
 * [apitrace](https://apitrace.github.io/): Trace render calls to graphics APIs like D3D and OpenGL.
 This tool allows you to record and re-play render calls of an application with frame-by-frame 
 debugging. Very useful to analyze the render pipeline or debug graphicial glitches.
+
+TODO cleanup and re-phrase, also add instructions how to use each tool, example on iidx games
+
+apitrace:
+
+* copy the wrapper DLL, TODO which one for old games with d3d8 vs. d3d9 and using the d3d8 to 9 wrapper
+* where is the output located? -> point to relevant docs of apitrace
+* use the gui gool to analyze frames and understand the rendering loop or specific frame composition
+
+procmon and apitrace as two key tools for working on reverse engineering games. add to btools docs. also add IDA, remote debugging and crafting own tools with small hook’s interfaces to explore behavior, e.g. simple logging statements, perf counters for performance critical parts (log periodically or write to file and evaluate later)
+
+TODO de-clutter this document, split out code style in its own doc for example
 
 ## Building
 Simply run make in the root folder:
