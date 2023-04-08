@@ -48,6 +48,8 @@ void iidxhook_util_frame_pace_init(double target_frame_rate_hz)
     log_info("Initialized, target frame rate in hz %f, target frame time in us %llu", target_frame_rate_hz, iidxhook_util_frame_pace_target_frame_time_us);
 }
 
+// Source and reference implementation:
+// https://nkga.github.io/post/frame-pacing-analysis-of-the-game-loop/
 void iidxhook_util_frame_pace_execute()
 {
     int64_t now_us;
