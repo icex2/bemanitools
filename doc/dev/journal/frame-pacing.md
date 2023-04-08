@@ -1,6 +1,39 @@
 # Micro stuttering and bad frame pacing
 
-## 
+TODO frame this entire dev journal/article about how IIDX works across engine generations and
+hardware and what the problems are. the goal is to take a very holistic approach but with a detailed
+view on selected aspects of these generations. consider this my personal knowledge dump and 
+understanding of all this based on the work i have done thus far (and all the stuff that came
+back up in the last weeks when working again on this).
+
+TODO merge from other branch with dev journal WIP snippets regarding ezusb stuff and the other
+one that i started.
+
+have code snippets of:
+* IO processing (gameplay side where it polls it, ezusb API and how ezusb updates stuff in the background async)
+* rendering
+  * apitrace example trace cut down to relevant parts
+  * specifically depict frame pacing
+  * specifically depict monitor check
+* sound processing (???)
+  * depict fixed frame rate thing
+
+TODO separate section to properly outline the engine generations. base the entire article on that
+and outline each generation regarding hardware used/software, IO, code snippets and problems
+
+assumed engine generations (TODO verify):
+* 1-8 (SD era with twinkle hardware): Talk about this to set the ground and where everything was
+  coming from. explain how the hardware operated, the realtime requirements and how the hardware met
+  them. This also likely set the understanding of the devs and the expectations for the game
+  engine and how everything behaves and works software-wise, but coupled very tightly to the hardware
+  requirements (which is one of the key root causes for all the mess that came after that with the
+  PC platform)
+* 9-13 (SD era with ezusb1)
+* 14 - 19 (SD era with ezusb1/2, monitor check added)
+* 20 - 24 (HD era with ezusb1/2, auto monitor check added)
+* 25 - 26 (non lightning but bio2)
+* 27 - 29 (two cabint types, bia2x added, 120 fps mode, two different hardware platforms for each cabinet type)
+* 30 (FHD mode)
 
 ## 10th style
 
@@ -94,6 +127,21 @@ further discussion in this conext.
     * IO hardware ezusb with very flaky ezusb code -> lots of sleeps in the code because they could
       not figure out the right timing for this. the impact on this becomes more apparent once
       the hardware platform moves into multi core -> flaky USBIO timeouts more frequent
+    * 9th style started off as the MVP for the PC platform. clear evidence for this are the many
+      different revisions and the game was known to be very buggy, especially in the first revisions
+      (TODO ref bemaniwiki). It gotten better throughout the revisions but the life span of this
+      version was rather short (TODO how long?) and 10th style followed only X months after.
+      apparently, konami wanted to make up for this to owners by giving owners of 9th style a free
+      software upgrade to 10th style, which consisted of only the HDD, as the code supports the
+      C02 IO and a C02 upgrade dongle with the product code `GEC02JA` (TODO code snippet of
+      security section showing that C02 and D01 dongles work). Aside that, konami also released
+      a new dedicated cabinet with D01 and the ezusb 1 IO received an upgrade, the so called "D01"
+      IO. The main differences to the "C02" IO are that the hardware is wired up differently. It
+      does not support the old style twinkle IO subboard anymore, connectors are different. One
+      key difference is that the turntables are now hooked up directly to the IO's FPGA instead of
+      going via a serial connection via the sub-IO board behind the effector panel which reduced
+      latency for the turntable input significantly and improved gameplay experience. this IO
+      hardware/setup was used throughout 10 to 13.
   * Gen 2: 14 to 19
     * D3D9 API
     * Windows XP based
