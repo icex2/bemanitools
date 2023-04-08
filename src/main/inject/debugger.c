@@ -226,6 +226,9 @@ static bool debugger_create_process(
     log_misc("Creating remote process %s...", app_name);
     log_misc("Remote process cmd_line: %s", cmd_line);
 
+    // TODO does this fix microstuttering?
+    flags |= REALTIME_PRIORITY_CLASS;
+
     ok = CreateProcess(
         app_name, cmd_line, NULL, NULL, FALSE, flags, NULL, NULL, &si, &pi);
 

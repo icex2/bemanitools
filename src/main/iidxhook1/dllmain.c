@@ -93,10 +93,10 @@ static void STDCALL my_Sleep(DWORD dwMilliseconds)
     // TODO this fucks around with ezusb code as well
     // where the devs used sleeps to work around data races
     // if the sleeps are too short, various random IO errors on boot happen 
-    else if (dwMilliseconds <= 1) {
-        YieldProcessor();
-        return;
-    }
+    // else if (dwMilliseconds <= 1) {
+    //     YieldProcessor();
+    //     return;
+    // }
 
     real_Sleep(dwMilliseconds);
 }
