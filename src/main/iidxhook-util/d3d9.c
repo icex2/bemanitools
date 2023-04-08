@@ -15,6 +15,9 @@
 #include "iidxhook-util/d3d9.h"
 #include "iidxhook-util/vertex-shader.h"
 
+#include "frame-mon.h"
+#include "frame-pace.h"
+
 #include "util/defs.h"
 #include "util/log.h"
 #include "util/str.h"
@@ -51,8 +54,6 @@ typedef HRESULT WINAPI (*func_D3DXCreateFontA)(
 /* ------------------------------------------------------------------------- */
 
 static struct iidxhook_util_d3d9_config iidxhook_util_d3d9_config;
-
-static uint64_t iidxhook_util_d3d9_present_current_time = 0;
 
 static struct {
     uint16_t original_back_buffer_width;
@@ -525,32 +526,38 @@ iidxhook_util_d3d9_nvidia_fix_iidx14_to_19(struct hook_d3d9_irp *irp)
     }
 }
 
+// TODO must be renamed to framerate monitor with smoother/pacer
+// TODO have feature flag to print framerate performance counters etc every X seconds
+// as misc debug log output
+// TODO make sure to record a decent amount of data/frame time accordingly over these
+// seconds to report proper avg. frame time/rate, min, max, p95, p99, p999
+// TODO move this to a separate module that can be re-used on d3d9ex
+
+// fill up unused frametime on short frames to simulate hardware accuracy
+// and match the timing of the target monitor's refresh rate as close as possible
+// this fixes frame pacing issues with too short frames not being smoothened
+// correctly by the game which either relies entirely on the hardware/GPU driver
+// to do that or on tricoro+ era games, on SleepEx which only has max of 1 ms
+// accuracy. the further the target monitor refresh rate is away from the desired
+// refresh rate, e.g. 60 hz vsync, the more apparent the frame pacing issues
+// become in the form of "random stuttering during gameplay"
 static void iidxhook_util_d3d9_framerate_limiter(struct hook_d3d9_irp *irp)
 {
     log_assert(irp);
     log_assert(irp->op == HOOK_D3D9_IRP_OP_DEV_PRESENT);
 
-    if (iidxhook_util_d3d9_config.framerate_limit > 0.0f) {
-        if (iidxhook_util_d3d9_present_current_time == 0) {
-            iidxhook_util_d3d9_present_current_time = time_get_counter();
-        } else {
-            uint64_t frame_time =
-                1000000 / iidxhook_util_d3d9_config.framerate_limit;
+    static bool inited = false;
 
-            uint64_t dt = time_get_elapsed_us(
-                time_get_counter() - iidxhook_util_d3d9_present_current_time);
-
-            while (dt < frame_time) {
-                /* waste some cpu time by polling
-                   because we can't sleep for X us */
-                dt = time_get_elapsed_us(
-                    time_get_counter() -
-                    iidxhook_util_d3d9_present_current_time);
-            }
-
-            iidxhook_util_d3d9_present_current_time = time_get_counter();
-        }
+    if (inited == false) {
+        iidxhook_util_frame_pace_init(iidxhook_util_d3d9_config.framerate_limit);
+        iidxhook_util_frame_monitor_init();
+        inited = true;
     }
+    if (iidxhook_util_d3d9_config.framerate_limit > 0.0f) {
+        iidxhook_util_frame_pace_execute();
+    }
+
+    //iidxhook_util_frame_monitor_record_frame();
 }
 
 static void

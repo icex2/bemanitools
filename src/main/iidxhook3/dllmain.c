@@ -58,11 +58,44 @@ static HANDLE STDCALL my_OpenProcess(DWORD, BOOL, DWORD);
 static HANDLE(STDCALL *real_OpenProcess)(DWORD, BOOL, DWORD);
 static bool iidxhook_init_check;
 
+static void STDCALL my_Sleep(DWORD dwMilliseconds);
+static void (STDCALL *real_Sleep)(DWORD dwMilliseconds);
+
 static const struct hook_symbol init_hook_syms[] = {
     {.name = "OpenProcess",
      .patch = my_OpenProcess,
      .link = (void **) &real_OpenProcess},
+         {
+        .name = "Sleep",
+        .patch = my_Sleep,
+        .link = (void **) &real_Sleep,
+    },
 };
+
+static DWORD main_thread_id = -1;
+
+static void STDCALL my_Sleep(DWORD dwMilliseconds)
+{
+    // Heuristic, but seems to kill the poorly implemented frame pacing code
+    // fairly reliable without impacting other parts of the code negatively
+    if (main_thread_id == GetCurrentThreadId()) {
+        if (dwMilliseconds <= 16) {
+            YieldProcessor();
+            return;
+        } else {
+            log_info("sleep: %d", dwMilliseconds);
+        }
+    }
+    // TODO this fucks around with ezusb code as well
+    // where the devs used sleeps to work around data races
+    // if the sleeps are too short, various random IO errors on boot happen 
+    else if (dwMilliseconds <= 1) {
+        YieldProcessor();
+        return;
+    }
+
+    real_Sleep(dwMilliseconds);
+}
 
 static void
 iidxhook3_setup_d3d9_hooks(const struct iidxhook_config_gfx *config_gfx)
@@ -134,6 +167,10 @@ my_OpenProcess(DWORD dwDesiredAccess, BOOL bInheritHandle, DWORD dwProcessId)
     log_info("-------------------------------------------------------------");
     log_info("--------------- Begin iidxhook my_OpenProcess ---------------");
     log_info("-------------------------------------------------------------");
+
+   main_thread_id = GetCurrentThreadId();
+
+    log_info("main thread id: %d", main_thread_id);
 
     config = cconfig_init();
 

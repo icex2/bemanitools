@@ -16,5 +16,7 @@ src_iidxhook-util     := \
     d3d9.c \
     eamuse.c \
     effector.c \
+    frame-mon.c \
+    frame-pace.c \
     log-server.c \
     settings.c \
