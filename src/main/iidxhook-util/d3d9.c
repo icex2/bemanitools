@@ -557,7 +557,7 @@ static void iidxhook_util_d3d9_framerate_limiter(struct hook_d3d9_irp *irp)
         iidxhook_util_frame_pace_execute();
     }
 
-    //iidxhook_util_frame_monitor_record_frame();
+    iidxhook_util_frame_monitor_update();
 }
 
 static void

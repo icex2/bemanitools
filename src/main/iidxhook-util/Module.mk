@@ -19,4 +19,5 @@ src_iidxhook-util     := \
     frame-mon.c \
     frame-pace.c \
     log-server.c \
+    proc-mon.c \
     settings.c \

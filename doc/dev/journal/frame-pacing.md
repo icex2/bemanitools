@@ -219,3 +219,30 @@ void __thiscall frame_pace_maybe(_DWORD *this)
     Sleep(v1 / 10000);
 }
 ```
+
+### Threading primitives used from win32 api
+
+* [CreateThread](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createthread)
+* [SetThreadPriority](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-setthreadpriority)
+  * Priorities
+    * `THREAD_PRIORITY_BELOW_NORMAL`: `-1`
+
+### Analysis threads used on 10th style engine
+
+* process: main thread via WinMain
+* long-running threads, life cycle throughout entire application, threads spawned via `CreateThread` API
+  * network thread for eamuse, thread proc `sub_465AA0`
+  * something during boot to speed up startup, i assume ??? `sub_473D40`
+    * Sets its own priority to `-1`
+  * `sub_475BC0`: Some thread to apparently load files with unbuffered IO, several [mmio](https://learn.microsoft.com/en-us/previous-versions/dd757331(v=vs.85)) calls throughout the function
+  * ezusb: TODO
+* short-running threads, spawned and used for a brief task, then killed
+  * threads spawned via `CreateThread` API via a wrapper function `sub_487550`, thread priority set to `-1` with `SetThreadPriority`
+
+### DWORD __stdcall sub_47C6E0(int a1, DWORD dwMilliseconds, HWND hWnd, UINT wMsgFilterMin, DWORD nCount)
+
+This is a very interesting one. it seems like this piece of logic is trying to influence thread scheduling on the system
+based on how long it took the thread to do something. the `> 10 ms` part seems to indicate that this is applied to
+the main thread. so if the main thread is too slow, the priority of it is boosted
+
+this logic apparently switches the main thread priority around if necessary

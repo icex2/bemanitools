@@ -9,6 +9,8 @@
 #include "hook/peb.h"
 #include "hook/table.h"
 
+#include "util/log.h"
+
 static const char apiset_prefix[] = "api-ms-win-core-";
 static const size_t apiset_prefix_len = sizeof(apiset_prefix) - 1;
 

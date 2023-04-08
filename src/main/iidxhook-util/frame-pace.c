@@ -30,7 +30,9 @@ static void iidxhook_util_frame_pace_sleep_us(int64_t sleep_us)
         Sleep(ms);
     } else if (sleep_us > 0) {
         // Remark: This is only available on Vista and newer
-        YieldProcessor();
+        // TODO make this a feature switch to enable/disable burning CPU?
+        // YieldProcessor();
+        
     } else {
         // If behind time, don't delay any further
     }

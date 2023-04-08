@@ -57,6 +57,10 @@ procmon and apitrace as two key tools for working on reverse engineering games. 
 
 TODO de-clutter this document, split out code style in its own doc for example
 
+* [Process Explorer](https://learn.microsoft.com/en-us/sysinternals/downloads/process-explorer)
+  * Absolutely brilliant tool to get all the information from a process, use for high level performance monitoring,
+    monitoring threads, IO, memory etc -> can be used to understand high level behavior of process and performance
+
 ## Building
 Simply run make in the root folder:
 ```
@@ -68,6 +72,25 @@ All output is located in the *build* folder including the final *bemanitools.zip
 Note about using `-j n` option on make: This is currently considered broken/unreliable. Expect to
 run into odd issues like randomly changing unresolved dependency errors. If you attempted this,
 run a `make clean` before running `make` again.
+
+### debugging and analysis
+
+TODO mainly applicable to iidx for now, link tooling and explain what is used and how and what
+can be achieved with it
+
+also explain btools built in tooling briefly:
+
+* inject
+  * log to text file
+  * attach built-in debugger to get log output
+  * attach remote debugger
+* iidx
+  * frame time recording
+  * ezusb debug output
+  * ezusb firmware dumping
+  * proc-mon
+* btools api test tools
+
 
 ### Release building
 A release build is a clean build including code formatting and testing. This can be executed by running the following

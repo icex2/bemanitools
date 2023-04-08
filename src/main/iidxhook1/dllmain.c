@@ -35,6 +35,7 @@
 #include "iidxhook-util/d3d9.h"
 #include "iidxhook-util/eamuse.h"
 #include "iidxhook-util/effector.h"
+#include "iidxhook-util/proc-mon.h"
 #include "iidxhook-util/settings.h"
 
 #include "iidxhook1/config-iidxhook1.h"
@@ -63,11 +64,23 @@ static bool iidxhook_init_check;
 static void STDCALL my_Sleep(DWORD dwMilliseconds);
 static void (STDCALL *real_Sleep)(DWORD dwMilliseconds);
 
+static BOOL STDCALL my_SetThreadPriority(
+    HANDLE hThread,
+    int nPriority);
+static BOOL (STDCALL *real_SetThreadPriority)(
+    HANDLE hThread,
+    int nPriority);
+
 static const struct hook_symbol init_hook_syms[] = {
     {
         .name = "OpenProcess",
         .patch = my_OpenProcess,
         .link = (void **) &real_OpenProcess,
+    },
+    {
+        .name = "SetThreadPriority",
+        .patch = my_SetThreadPriority,
+        .link = (void **) &real_SetThreadPriority,
     },
     {
         .name = "Sleep",
@@ -76,7 +89,16 @@ static const struct hook_symbol init_hook_syms[] = {
     },
 };
 
+static const struct hook_symbol ezusb_hook_syms[] = {
+    {
+        .name = "SetThreadPriority",
+        .patch = my_SetThreadPriority,
+        .link = (void **) &real_SetThreadPriority,
+    },
+};
+
 static DWORD main_thread_id = -1;
+static HANDLE main_thread_handle = INVALID_HANDLE_VALUE;
 
 static void STDCALL my_Sleep(DWORD dwMilliseconds)
 {
@@ -84,10 +106,9 @@ static void STDCALL my_Sleep(DWORD dwMilliseconds)
     // fairly reliable without impacting other parts of the code negatively
     if (main_thread_id == GetCurrentThreadId()) {
         if (dwMilliseconds <= 16) {
-            YieldProcessor();
             return;
         } else {
-            log_info("sleep: %d", dwMilliseconds);
+            log_info("sleep: %ld", dwMilliseconds);
         }
     }
     // TODO this fucks around with ezusb code as well
@@ -99,6 +120,23 @@ static void STDCALL my_Sleep(DWORD dwMilliseconds)
     // }
 
     real_Sleep(dwMilliseconds);
+}
+
+static BOOL STDCALL my_SetThreadPriority(
+        HANDLE hThread,
+        int nPriority)
+{
+    if (hThread == iidxhook_util_proc_monitor_get_main_thread_handle()) {
+        log_info("Patch main thread, realtime priority");
+        return real_SetThreadPriority(hThread, THREAD_PRIORITY_TIME_CRITICAL);
+    } else {
+        // TODO ???
+        //log_info("Patch thread priority of thread %p, priority %d -> 0 (normal)", hThread, nPriority);
+    }   
+
+    // TODO what about patching the ezusb IO threads on 9 and 10 with separate ezusb lib?
+   
+    return real_SetThreadPriority(hThread, nPriority);
 }
 
 static void iidxhook1_setup_d3d9_hooks(
@@ -175,9 +213,39 @@ my_OpenProcess(DWORD dwDesiredAccess, BOOL bInheritHandle, DWORD dwProcessId)
     log_info("--------------- Begin iidxhook my_OpenProcess ---------------");
     log_info("-------------------------------------------------------------");
 
-    main_thread_id = GetCurrentThreadId();
 
-    log_info("main thread id: %d", main_thread_id);
+
+
+    // only valid for 9 and 10, TODO needs to go to its own module and cleaned up
+//         HMODULE handle = GetModuleHandleA("ezusb.dll");
+
+//         if (handle != NULL) {
+//             hook_table_apply(
+//             handle, "kernel32.dll", ezusb_hook_syms, lengthof(ezusb_hook_syms));
+//         } else {
+//             log_warning("Could not find ezusb.dll");
+//         }
+
+// iidxhook_util_proc_monitor_init();
+
+
+
+
+    main_thread_id = GetCurrentThreadId();
+    main_thread_handle = GetCurrentThread();
+
+    // TODO move to own module, make feature flag triggerable
+    // pin main thread to core 0
+    // pin IO thread to core 1
+    SetThreadPriority(main_thread_handle, THREAD_PRIORITY_TIME_CRITICAL);
+
+    DWORD_PTR dwThreadAffinityMask = 1 << 0; // CPU core 0
+    DWORD_PTR dwPreviousAffinityMask = SetThreadAffinityMask(main_thread_handle, dwThreadAffinityMask);
+    if (dwPreviousAffinityMask == 0)
+    {
+        // error handling code
+        log_warning("Setting affinity mask failed");
+    }
 
     config = cconfig_init();
 
@@ -310,6 +378,7 @@ BOOL WINAPI DllMain(HMODULE mod, DWORD reason, void *ctx)
         acp_hook_init();
         adapter_hook_init();
         eamuse_hook_init();
+        iidxhook_util_proc_monitor_init();
         settings_hook_init();
     }
 
