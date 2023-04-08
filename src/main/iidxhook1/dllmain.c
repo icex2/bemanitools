@@ -235,10 +235,13 @@ my_OpenProcess(DWORD dwDesiredAccess, BOOL bInheritHandle, DWORD dwProcessId)
     main_thread_handle = GetCurrentThread();
 
     // TODO move to own module, make feature flag triggerable
-    // pin main thread to core 0
-    // pin IO thread to core 1
     SetThreadPriority(main_thread_handle, THREAD_PRIORITY_TIME_CRITICAL);
 
+    // TODO move to own module, make feature flag triggerable
+    // the following requires at least a quad core CPU but can reduce micro stutters further
+    // pin main thread to core 0
+    // pin IO thread to core 1
+    // pin all other threads to cores 2 and 3
     DWORD_PTR dwThreadAffinityMask = 1 << 0; // CPU core 0
     DWORD_PTR dwPreviousAffinityMask = SetThreadAffinityMask(main_thread_handle, dwThreadAffinityMask);
     if (dwPreviousAffinityMask == 0)
