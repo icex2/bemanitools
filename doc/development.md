@@ -61,6 +61,9 @@ TODO de-clutter this document, split out code style in its own doc for example
   * Absolutely brilliant tool to get all the information from a process, use for high level performance monitoring,
     monitoring threads, IO, memory etc -> can be used to understand high level behavior of process and performance
 
+https://github.com/lucasg/Dependencies
+* figure out missing dependencies when trying to run games
+
 ## Building
 Simply run make in the root folder:
 ```

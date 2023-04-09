@@ -52,6 +52,14 @@ static HRESULT STDCALL my_EnumAdapterModes(
     UINT Mode,
     D3DDISPLAYMODE *pMode);
 
+static HRESULT STDCALL my_PresentEx(
+    IDirect3DDevice9Ex *self,
+    const RECT *pSourceRect,
+    const RECT *pDestRect,
+    HWND hDestWindowOverride,
+    const RGNDATA *pDirtyRegion,
+    DWORD dwFlags);
+
 static UINT STDCALL
 my_GetAdapterModeCount(IDirect3D9Ex *self, UINT Adapter, D3DFORMAT Format);
 
@@ -87,6 +95,14 @@ static HRESULT(STDCALL *real_Direct3DCreate9Ex)(
 
 static BOOL(STDCALL *real_EnumDisplayDevicesA)(
     const char *dev_name, DWORD dev_num, DISPLAY_DEVICEA *info, DWORD flags);
+
+static HRESULT (STDCALL *real_PresentEx)(
+    IDirect3DDevice9Ex *self,
+    const RECT *pSourceRect,
+    const RECT *pDestRect,
+    HWND hDestWindowOverride,
+    const RGNDATA *pDirtyRegion,
+    DWORD dwFlags);
 
 static BOOL(STDCALL *real_MoveWindow)(
     HWND hWnd, int X, int Y, int nWidth, int nHeight, BOOL bRepaint);
@@ -289,6 +305,9 @@ static HRESULT STDCALL my_CreateDeviceEx(
     log_assert(pp);
     log_assert(pdev);
 
+    IDirect3DDevice9Ex *api;
+    IDirect3DDevice9ExVtbl *api_vtbl;
+    struct com_proxy *api_proxy;
     IDirect3D9Ex *real = com_proxy_downcast(self)->real;
     HRESULT hr;
 
@@ -434,6 +453,19 @@ static HRESULT STDCALL my_CreateDeviceEx(
         SetWindowLongPtr(hwnd, GWLP_WNDPROC, (uintptr_t) my_WndProc);
     }
 
+    api = *pdev;
+    hr = com_proxy_wrap(&api_proxy, api, sizeof(*api->lpVtbl));
+
+    if (hr != S_OK) {
+        log_warning("Wrapping com proxy failed: %08lx", hr);
+        return hr;
+    }
+
+    api_vtbl = api_proxy->vptr;
+
+    real_PresentEx = api_vtbl->PresentEx;
+    api_vtbl->PresentEx = my_PresentEx;
+
     return hr;
 }
 
@@ -521,6 +553,23 @@ static BOOL STDCALL my_EnumDisplayDevicesA(
     ok = real_EnumDisplayDevicesA(dev_name, dev_num, info, flags);
 
     return ok;
+}
+
+static HRESULT STDCALL my_PresentEx(
+        IDirect3DDevice9Ex *self,
+        const RECT *pSourceRect,
+        const RECT *pDestRect,
+        HWND hDestWindowOverride,
+        const RGNDATA *pDirtyRegion,
+        DWORD dwFlags)
+{
+    HRESULT res;
+
+    log_warning(">>>>>");
+
+    res = real_PresentEx(self, pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion, dwFlags);
+
+    return res;
 }
 
 void d3d9ex_hook_init(void)

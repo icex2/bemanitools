@@ -10,6 +10,8 @@
 
 #include "cconfig/cconfig-hook.h"
 
+#include "hook/table.h"
+
 #include "hooklib/acp.h"
 #include "hooklib/adapter.h"
 #include "hooklib/app.h"
@@ -93,6 +95,25 @@ static bool load_configs()
     cconfig_finit(config);
 
     return true;
+}
+
+static DWORD STDCALL my_SleepEx(
+    DWORD dwMilliseconds, BOOL bAlertable);
+static DWORD (STDCALL *real_SleepEx)(
+    DWORD dwMilliseconds, BOOL bAlertable);
+
+static const struct hook_symbol init_hook_syms[] = {
+    {
+        .name = "SleepEx",
+        .patch = my_SleepEx,
+        .link = (void **) &real_SleepEx,
+    },
+};
+
+static DWORD STDCALL my_SleepEx(
+    DWORD dwMilliseconds, BOOL bAlertable)
+{
+    return 0;
 }
 
 static bool my_dll_entry_init(char *sidcode, struct property_node *param)
@@ -282,6 +303,9 @@ BOOL WINAPI DllMain(HMODULE mod, DWORD reason, void *ctx)
         // which sets swaps the main log write to that instead
         log_to_writer(log_writer_file, stdout);
     }
+
+    hook_table_apply(
+            NULL, "kernel32.dll", init_hook_syms, lengthof(init_hook_syms));
 
     pre_hook();
 
