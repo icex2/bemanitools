@@ -1,3 +1,24 @@
+TODO add to handbook
+
+[2023/04/09 22:30:14] W:libutils: '\\Mac\VM Shared Folder\iidx\25\bm2dx.dll' couldn't be loaded: The specified module could not be found.
+
+[2023/04/09 22:30:14] F:libutils: 
+
+Please check if bm2dx.dll exists and the permissions are fine.
+If the problem still persists, try installing:
+* Microsoft Visual C++ Redistributables (*all* versions, *both* x86/x64)
+    Hint: use one of the AIO installers (e.g. https://github.com/abbodi1406/vcredist)
+* DirectX End-User Runtimes (June 2010)
+* Running Windows 10 "N"?
+    Grab: https://www.microsoft.com/en-us/software-download/mediafeaturepack
+    Check: https://support.microsoft.com/en-us/help/4562569/media-feature-pack-for-windows-10-n-may-2020
+* Running Windows 7 "N"?
+    Grab: https://www.microsoft.com/en-us/download/details.aspx?id=16546
+* Still have problems?
+Find the missing dependency using: http://www.dependencywalker.com/
+
+
+
 # Bemanitools 5
 [![pipeline status](https://dev.s-ul.net/djhackers/bemanitools/badges/master/pipeline.svg)](https://dev.s-ul.net/djhackers/bemanitools/commits/master)
 

@@ -52,6 +52,18 @@ static HRESULT STDCALL my_EnumAdapterModes(
     UINT Mode,
     D3DDISPLAYMODE *pMode);
 
+static HRESULT STDCALL my_GetSwapChain(
+    IDirect3DDevice9Ex *self,
+    UINT iSwapChain,
+    IDirect3DSwapChain9 **pSwapChain);
+
+static HRESULT STDCALL my_Present(
+    IDirect3DDevice9Ex *self,
+    const RECT *pSourceRect,
+    const RECT *pDestRect,
+    HWND hDestWindowOverride,
+    const RGNDATA *pDirtyRegion);
+
 static HRESULT STDCALL my_PresentEx(
     IDirect3DDevice9Ex *self,
     const RECT *pSourceRect,
@@ -59,6 +71,14 @@ static HRESULT STDCALL my_PresentEx(
     HWND hDestWindowOverride,
     const RGNDATA *pDirtyRegion,
     DWORD dwFlags);
+
+static HRESULT STDCALL my_SwapChainPresent(
+        IDirect3DSwapChain9Ex *self,
+        const RECT *pSourceRect,
+        const RECT *pDestRect,
+        HWND hDestWindowOverride,
+        const RGNDATA *pDirtyRegion,
+        DWORD dwFlags);
 
 static UINT STDCALL
 my_GetAdapterModeCount(IDirect3D9Ex *self, UINT Adapter, D3DFORMAT Format);
@@ -96,6 +116,18 @@ static HRESULT(STDCALL *real_Direct3DCreate9Ex)(
 static BOOL(STDCALL *real_EnumDisplayDevicesA)(
     const char *dev_name, DWORD dev_num, DISPLAY_DEVICEA *info, DWORD flags);
 
+static HRESULT (STDCALL *real_GetSwapChain)(
+    IDirect3DDevice9Ex *self,
+    UINT iSwapChain,
+    IDirect3DSwapChain9 **pSwapChain);
+
+static HRESULT (STDCALL *real_Present)(
+    IDirect3DDevice9Ex *self,
+    const RECT *pSourceRect,
+    const RECT *pDestRect,
+    HWND hDestWindowOverride,
+    const RGNDATA *pDirtyRegion);
+
 static HRESULT (STDCALL *real_PresentEx)(
     IDirect3DDevice9Ex *self,
     const RECT *pSourceRect,
@@ -103,6 +135,14 @@ static HRESULT (STDCALL *real_PresentEx)(
     HWND hDestWindowOverride,
     const RGNDATA *pDirtyRegion,
     DWORD dwFlags);
+
+static HRESULT (STDCALL *real_SwapChainPresent)(
+        IDirect3DSwapChain9Ex *self,
+        const RECT *pSourceRect,
+        const RECT *pDestRect,
+        HWND hDestWindowOverride,
+        const RGNDATA *pDirtyRegion,
+        DWORD dwFlags);
 
 static BOOL(STDCALL *real_MoveWindow)(
     HWND hWnd, int X, int Y, int nWidth, int nHeight, BOOL bRepaint);
@@ -463,8 +503,16 @@ static HRESULT STDCALL my_CreateDeviceEx(
 
     api_vtbl = api_proxy->vptr;
 
+    real_GetSwapChain = api_vtbl->GetSwapChain;
+    api_vtbl->GetSwapChain = my_GetSwapChain;
+
+    real_Present = api_vtbl->Present;
+    api_vtbl->Present = my_Present;
+
     real_PresentEx = api_vtbl->PresentEx;
     api_vtbl->PresentEx = my_PresentEx;
+
+    *pdev = (IDirect3DDevice9Ex *) api_proxy;
 
     return hr;
 }
@@ -555,6 +603,65 @@ static BOOL STDCALL my_EnumDisplayDevicesA(
     return ok;
 }
 
+static HRESULT STDCALL my_GetSwapChain(
+        IDirect3DDevice9Ex *self,
+        UINT iSwapChain,
+        IDirect3DSwapChain9 **pSwapChain)
+{
+    HRESULT hr;
+    IDirect3DSwapChain9ExVtbl *api_vtbl;
+    struct com_proxy *api_proxy;
+    IDirect3DSwapChain9Ex *api;
+
+    log_info("GetSwapChain hook hit: %d", iSwapChain);
+
+    hr = real_GetSwapChain(self, iSwapChain, pSwapChain);
+
+    if (hr != D3D_OK) {
+        return hr;
+    }
+
+    log_misc("Hooking swap chain present");
+
+    // We know that the swap chain is a SwapChain9Ex and not just a SwapChain9
+    // because of the created Ex context
+    api = (IDirect3DSwapChain9Ex*) *pSwapChain;
+
+    hr = com_proxy_wrap(&api_proxy, api, sizeof(*api->lpVtbl));
+
+    if (hr != S_OK) {
+        log_warning("Wrapping com proxy failed: %08lx", hr);
+        return hr;
+    }
+
+    api_vtbl = api_proxy->vptr;
+
+    real_SwapChainPresent = api_vtbl->Present;
+    api_vtbl->Present = my_SwapChainPresent;
+
+    // We know that the swap chain is a SwapChain9Ex and not just a SwapChain9
+    // because of the created Ex context
+    *pSwapChain = (IDirect3DSwapChain9 *) api_proxy;
+
+    return D3D_OK;
+}
+
+static HRESULT STDCALL my_Present(
+        IDirect3DDevice9Ex *self,
+        const RECT *pSourceRect,
+        const RECT *pDestRect,
+        HWND hDestWindowOverride,
+        const RGNDATA *pDirtyRegion)
+{
+    HRESULT res;
+
+    log_warning(">>>>> asd1234 @!!!!!");
+
+    res = real_Present(self, pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion);
+
+    return res;
+}
+
 static HRESULT STDCALL my_PresentEx(
         IDirect3DDevice9Ex *self,
         const RECT *pSourceRect,
@@ -565,9 +672,26 @@ static HRESULT STDCALL my_PresentEx(
 {
     HRESULT res;
 
-    log_warning(">>>>>");
+    log_warning(">>>>> asd1234 EX -----");
 
     res = real_PresentEx(self, pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion, dwFlags);
+
+    return res;
+}
+
+static HRESULT STDCALL my_SwapChainPresent(
+        IDirect3DSwapChain9Ex *self,
+        const RECT *pSourceRect,
+        const RECT *pDestRect,
+        HWND hDestWindowOverride,
+        const RGNDATA *pDirtyRegion,
+        DWORD dwFlags)
+{
+    HRESULT res;
+
+    log_warning(">>>>> asd1234 swap chain present -----");
+
+    res = real_SwapChainPresent(self, pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion, dwFlags);
 
     return res;
 }
