@@ -57,6 +57,11 @@ static HRESULT STDCALL my_GetSwapChain(
     UINT iSwapChain,
     IDirect3DSwapChain9 **pSwapChain);
 
+static HRESULT STDCALL my_SwapChainQueryInterface(
+    IDirect3DSwapChain9 *self,
+    REFIID riid,
+    void** ppvObj);
+
 static HRESULT STDCALL my_Present(
     IDirect3DDevice9Ex *self,
     const RECT *pSourceRect,
@@ -73,7 +78,7 @@ static HRESULT STDCALL my_PresentEx(
     DWORD dwFlags);
 
 static HRESULT STDCALL my_SwapChainPresent(
-        IDirect3DSwapChain9Ex *self,
+        IDirect3DSwapChain9 *self,
         const RECT *pSourceRect,
         const RECT *pDestRect,
         HWND hDestWindowOverride,
@@ -121,6 +126,11 @@ static HRESULT (STDCALL *real_GetSwapChain)(
     UINT iSwapChain,
     IDirect3DSwapChain9 **pSwapChain);
 
+static HRESULT (STDCALL *real_SwapChainQueryInterface)(
+    IDirect3DSwapChain9 *self,
+    REFIID riid,
+    void** ppvObj);
+
 static HRESULT (STDCALL *real_Present)(
     IDirect3DDevice9Ex *self,
     const RECT *pSourceRect,
@@ -137,7 +147,7 @@ static HRESULT (STDCALL *real_PresentEx)(
     DWORD dwFlags);
 
 static HRESULT (STDCALL *real_SwapChainPresent)(
-        IDirect3DSwapChain9Ex *self,
+        IDirect3DSwapChain9 *self,
         const RECT *pSourceRect,
         const RECT *pDestRect,
         HWND hDestWindowOverride,
@@ -609,9 +619,9 @@ static HRESULT STDCALL my_GetSwapChain(
         IDirect3DSwapChain9 **pSwapChain)
 {
     HRESULT hr;
-    IDirect3DSwapChain9ExVtbl *api_vtbl;
+    IDirect3DSwapChain9Vtbl *api_vtbl;
     struct com_proxy *api_proxy;
-    IDirect3DSwapChain9Ex *api;
+    IDirect3DSwapChain9 *api;
 
     log_info("GetSwapChain hook hit: %d", iSwapChain);
 
@@ -623,9 +633,7 @@ static HRESULT STDCALL my_GetSwapChain(
 
     log_misc("Hooking swap chain present");
 
-    // We know that the swap chain is a SwapChain9Ex and not just a SwapChain9
-    // because of the created Ex context
-    api = (IDirect3DSwapChain9Ex*) *pSwapChain;
+    api = *pSwapChain;
 
     hr = com_proxy_wrap(&api_proxy, api, sizeof(*api->lpVtbl));
 
@@ -636,14 +644,28 @@ static HRESULT STDCALL my_GetSwapChain(
 
     api_vtbl = api_proxy->vptr;
 
+    real_SwapChainQueryInterface = api_vtbl->QueryInterface;
+    api_vtbl->QueryInterface = my_SwapChainQueryInterface;
+
     real_SwapChainPresent = api_vtbl->Present;
     api_vtbl->Present = my_SwapChainPresent;
 
-    // We know that the swap chain is a SwapChain9Ex and not just a SwapChain9
-    // because of the created Ex context
     *pSwapChain = (IDirect3DSwapChain9 *) api_proxy;
 
     return D3D_OK;
+}
+
+static HRESULT STDCALL my_SwapChainQueryInterface(
+        IDirect3DSwapChain9 *self,
+        REFIID riid,
+        void** ppvObj)
+{
+    log_misc("SwapChain::QueryInterface hit");
+
+    IDirect3DSwapChain9_AddRef(self);
+    *ppvObj = self;
+
+    return S_OK;
 }
 
 static HRESULT STDCALL my_Present(
@@ -680,7 +702,7 @@ static HRESULT STDCALL my_PresentEx(
 }
 
 static HRESULT STDCALL my_SwapChainPresent(
-        IDirect3DSwapChain9Ex *self,
+        IDirect3DSwapChain9 *self,
         const RECT *pSourceRect,
         const RECT *pDestRect,
         HWND hDestWindowOverride,
