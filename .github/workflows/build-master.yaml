@@ -1,9 +1,14 @@
 name: "Build bemanitools"
 
+# on:
+#   push:
+#     branches:
+#       - master
 on:
   push:
-    branches:
-      - master
+    paths:
+      - '**'
+
 jobs:
   build:
     runs-on: "ubuntu-22.04"
