@@ -1,5 +1,8 @@
 name: "Build bemanitools and publish release"
 
+permissions:
+  actions: write
+
 on:
   push:
     tags:
