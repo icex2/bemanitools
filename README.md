@@ -1,4 +1,60 @@
-TODO add to handbook
+# WIP SCRATCHPAD
+
+* further optimzation potential to remove the last micro stutters:
+  * at least on old styles, background videos are read/streamed from file and decoded in main
+    thread -> have in memory file for videos to load them entirely into ram before song
+    -> most apparent stutter is the one right when the video starts
+  * tested 11 without videos by just removing the movie folder, game works fine without. still microstutter occasionally
+
+* set main (render) thread priority to max
+* remove CPU yield on frame pacer and also the sleep hook -> check if these were causing further frame stutter
+
+* realtime priority process and threads via inject and .bat scripts (for launcher games)
+  has significant impact on ezusb timings and data races
+
+* realtime priority process fixes a significant amount of microstuttering
+  * seems to fix also ezusb timeout issues?
+
+* thread/process priority for iidx games
+  * createprocesds in inject needs to set the priority class otherwise setting realtime priority to inject doesn't make the target game go into realtime prioritity
+
+* check/test if processor affinity for main thread helps
+
+* yoink mixer.c from popnhook and port to iidx to block volume settings changes
+
+iidx genuine code base bug: frame pacing depends on fixed framerate as close to 60hz as possible -> gameplay stuttering caused by the game re-syncing the notes. more notable the further the monitor refresh rate is away from 60hz
+
+* FM trns out happening on empress
+  * also on DJT
+  * gold works -> not anymore now...
+
+* ezusb fm trns-out error needs to be fixed, happens too often -> FM = firmware
+* log output flood cross-impact: ezusb timeout seems to be impacted by too much log output for some reason
+  * on both, launcher and inject -> hiding cmd window helps
+  * document that as a known issue in btools and how to turn log level down to "fix" this
+  * this also might have an impact on the SQ errors on 10th style
+  * just tested with minimized window and nope, also happened
+  * trns out timeouts seem to happen more often on ezusb2 than on 1
+
+  * handbook faq: how does syncing work across the games? -> 09-19 use btools "monitor-check" and chart patching feature,
+    all newer HD style games starting 20+ use the built in monitor check feature as it can determine arbitrary refresh
+    rates and applies them accordingly. stock old games only apply either 59.95 or 60.05 which often aren't even close
+    to modern monitor refresh rates
+
+    * btools dev journal ezusb? 9th style led ticker scrolling is very bouncy -> non fixable problem because of the
+    out buffer not being synchronized correctly. symptom of the bad concurrency job in ezusb client library
+
+## TODO merge with journal about frame pacing issue
+
+konami apparently never did implement proper frame pacing logic to ensure clean sync of any monitor hardware/GPU hardware connected to the system with the engine sync (target refresh rate in charts)
+
+* 60: 16,6666666
+* 59.98 -> 16,67222
+* 59.9345 -> 16,68488
+
+the old games, pre tricoro era, do not have any frame pacing and rely entirely on hardware, GPU+monitor refresh rate to pace accordingly. if this is not given, then stuff goes offsync and stuttering appears due to too short frames. this became more and more of an issue the more different the hardware got and the more different types of monitors were introduced since there was not a single timing matching anymore properly. instead of proper framepacing, the devs apparently tried to address this by approximating things starting iidx gold with their "monitor check" feature. they either had the game tick/run on 59.95 or 60.05 hz. the closer any monitor was to these values, the better the sync and less stuttering/frame pacing issues. this got addressed more properly but still not proper enough with tricoro+ where they implemented proper timing logic that times frames accordingly to sync up with the monitor refresh rate. however, the accuracy is limiated to 1 ms. the songs are sync this way (or the offsync is so minor, you don't notice), but the frame pacing is still an issue especially the farther the actual refresh rate is away from any refresh rate dividable by full ms accuracy
+
+## TODO add to handbook
 
 [2023/04/09 22:30:14] W:libutils: '\\Mac\VM Shared Folder\iidx\25\bm2dx.dll' couldn't be loaded: The specified module could not be found.
 
