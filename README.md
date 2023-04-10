@@ -16,6 +16,8 @@ authentic gameplay experience, and easier support for a broader range of release
 Browse our [documentation](doc/README.md) as it might already cover various questions and concerns
 you are looking for or about to ask.
 
+asdasd
+
 ## Contributions and bug reporting
 [Read the dedicated CONTRIBUTING.md documentation](CONTRIBUTING.md).
 
