@@ -84,10 +84,33 @@ void iidxhook_util_frame_monitor_init(double target_frame_rate_hz)
     log_info("Initialized, data output: frame-mon.csv");
 }
 
-void iidxhook_util_frame_monitor_update()
+HRESULT iidxhook_d3d9_frame_mon_d3d9_irp_handler(struct hook_d3d9_irp *irp)
 {
     int64_t now_us;
     int64_t frame_time_us;
+    
+
+
+    
+    HRESULT hr;
+
+    log_assert(irp);
+
+    if (!iidxhook_d3d9_frame_pace_initialized) {
+        return hook_d3d9_irp_invoke_next(irp);
+    }
+
+    if (irp->op == HOOK_D3D9_IRP_OP_DEV_PRESENT) {
+        hr = hook_d3d9_irp_invoke_next(irp);
+
+        if (hr == S_OK) {
+            iidxhook_d3d9_frame_pace();
+        }
+
+        return hr;
+    }
+
+
 
     iidxhook_util_frame_monitor_total_frame_counter++;
 

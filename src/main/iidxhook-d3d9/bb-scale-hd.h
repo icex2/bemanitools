@@ -1,5 +1,5 @@
-#ifndef IIDXHOOK_D3D9_HD_H
-#define IIDXHOOK_D3D9_HD_H
+#ifndef IIDXHOOK_D3D9_BB_SCALE_HD_H
+#define IIDXHOOK_D3D9_BB_SCALE_HD_H
 
 #include <stdbool.h>
 #include <stdint.h>

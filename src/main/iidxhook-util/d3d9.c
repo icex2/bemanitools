@@ -15,9 +15,6 @@
 #include "iidxhook-util/d3d9.h"
 #include "iidxhook-util/vertex-shader.h"
 
-#include "frame-mon.h"
-#include "frame-pace.h"
-
 #include "util/defs.h"
 #include "util/log.h"
 #include "util/str.h"
@@ -524,40 +521,6 @@ iidxhook_util_d3d9_nvidia_fix_iidx14_to_19(struct hook_d3d9_irp *irp)
         irp->args.dev_create_texture.shared_handle == NULL) {
         irp->args.dev_create_texture.format = D3DFMT_A8R8G8B8;
     }
-}
-
-// TODO must be renamed to framerate monitor with smoother/pacer
-// TODO have feature flag to print framerate performance counters etc every X seconds
-// as misc debug log output
-// TODO make sure to record a decent amount of data/frame time accordingly over these
-// seconds to report proper avg. frame time/rate, min, max, p95, p99, p999
-// TODO move this to a separate module that can be re-used on d3d9ex
-
-// fill up unused frametime on short frames to simulate hardware accuracy
-// and match the timing of the target monitor's refresh rate as close as possible
-// this fixes frame pacing issues with too short frames not being smoothened
-// correctly by the game which either relies entirely on the hardware/GPU driver
-// to do that or on tricoro+ era games, on SleepEx which only has max of 1 ms
-// accuracy. the further the target monitor refresh rate is away from the desired
-// refresh rate, e.g. 60 hz vsync, the more apparent the frame pacing issues
-// become in the form of "random stuttering during gameplay"
-static void iidxhook_util_d3d9_framerate_limiter(struct hook_d3d9_irp *irp)
-{
-    log_assert(irp);
-    log_assert(irp->op == HOOK_D3D9_IRP_OP_DEV_PRESENT);
-
-    static bool inited = false;
-
-    if (inited == false) {
-        iidxhook_util_frame_pace_init(iidxhook_util_d3d9_config.framerate_limit);
-        iidxhook_util_frame_monitor_init();
-        inited = true;
-    }
-    if (iidxhook_util_d3d9_config.framerate_limit > 0.0f) {
-        iidxhook_util_frame_pace_execute();
-    }
-
-    iidxhook_util_frame_monitor_update();
 }
 
 static void
@@ -1153,13 +1116,7 @@ iidxhook_util_d3d9_irp_handler(struct hook_d3d9_irp *irp)
             iidxhook_util_d3d9_scale_render_target_to_back_buffer(irp);
             iidxhook_util_d3d9_set_back_buffer_rt(irp);
 
-            hr = hook_d3d9_irp_invoke_next(irp);
-
-            if (hr == S_OK) {
-                iidxhook_util_d3d9_framerate_limiter(irp);
-            }
-
-            return hr;
+            return hook_d3d9_irp_invoke_next(irp);
 
         case HOOK_D3D9_IRP_OP_DEV_SET_RENDER_STATE:
             iidxhook_util_d3d9_iidx12_fix_song_select_bg(irp);

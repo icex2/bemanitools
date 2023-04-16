@@ -1,4 +1,5 @@
 #include <windows.h>
+#include <powrprof.h>
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -25,6 +26,9 @@
 #include "hooklib/adapter.h"
 #include "hooklib/setupapi.h"
 
+#include "iidxhook-d3d9/frame-mon.h"
+#include "iidxhook-d3d9/frame-pace.h"
+
 #include "iidxhook-util/chart-patch.h"
 #include "iidxhook-util/clock.h"
 #include "iidxhook-util/config-eamuse.h"
@@ -36,6 +40,7 @@
 #include "iidxhook-util/eamuse.h"
 #include "iidxhook-util/effector.h"
 #include "iidxhook-util/proc-mon.h"
+#include "iidxhook-util/proc-perf.h"
 #include "iidxhook-util/settings.h"
 
 #include "iidxhook1/config-iidxhook1.h"
@@ -53,7 +58,9 @@
     "Usage: inject.exe iidxhook1.dll <bm2dx.exe> [options...]"
 
 static const hook_d3d9_irp_handler_t iidxhook_d3d9_handlers[] = {
+    iidxhook_d3d9_frame_pace_d3d9_irp_handler,
     iidxhook_util_d3d9_irp_handler,
+    iidxhook_d3d9_frame_mon_d3d9_irp_handler,
 };
 
 static HANDLE STDCALL my_OpenProcess(DWORD, BOOL, DWORD);
@@ -61,83 +68,13 @@ static HANDLE(STDCALL *real_OpenProcess)(DWORD, BOOL, DWORD);
 
 static bool iidxhook_init_check;
 
-static void STDCALL my_Sleep(DWORD dwMilliseconds);
-static void (STDCALL *real_Sleep)(DWORD dwMilliseconds);
-
-static BOOL STDCALL my_SetThreadPriority(
-    HANDLE hThread,
-    int nPriority);
-static BOOL (STDCALL *real_SetThreadPriority)(
-    HANDLE hThread,
-    int nPriority);
-
 static const struct hook_symbol init_hook_syms[] = {
     {
         .name = "OpenProcess",
         .patch = my_OpenProcess,
         .link = (void **) &real_OpenProcess,
     },
-    {
-        .name = "SetThreadPriority",
-        .patch = my_SetThreadPriority,
-        .link = (void **) &real_SetThreadPriority,
-    },
-    {
-        .name = "Sleep",
-        .patch = my_Sleep,
-        .link = (void **) &real_Sleep,
-    },
 };
-
-static const struct hook_symbol ezusb_hook_syms[] = {
-    {
-        .name = "SetThreadPriority",
-        .patch = my_SetThreadPriority,
-        .link = (void **) &real_SetThreadPriority,
-    },
-};
-
-static DWORD main_thread_id = -1;
-static HANDLE main_thread_handle = INVALID_HANDLE_VALUE;
-
-static void STDCALL my_Sleep(DWORD dwMilliseconds)
-{
-    // Heuristic, but seems to kill the poorly implemented frame pacing code
-    // fairly reliable without impacting other parts of the code negatively
-    if (main_thread_id == GetCurrentThreadId()) {
-        if (dwMilliseconds <= 16) {
-            return;
-        } else {
-            log_info("sleep: %ld", dwMilliseconds);
-        }
-    }
-    // TODO this fucks around with ezusb code as well
-    // where the devs used sleeps to work around data races
-    // if the sleeps are too short, various random IO errors on boot happen 
-    // else if (dwMilliseconds <= 1) {
-    //     YieldProcessor();
-    //     return;
-    // }
-
-    real_Sleep(dwMilliseconds);
-}
-
-static BOOL STDCALL my_SetThreadPriority(
-        HANDLE hThread,
-        int nPriority)
-{
-    if (hThread == iidxhook_util_proc_monitor_get_main_thread_handle()) {
-        log_info("Patch main thread, realtime priority");
-        return real_SetThreadPriority(hThread, THREAD_PRIORITY_TIME_CRITICAL);
-    } else {
-        // TODO ???
-        //log_info("Patch thread priority of thread %p, priority %d -> 0 (normal)", hThread, nPriority);
-    }   
-
-    // TODO what about patching the ezusb IO threads on 9 and 10 with separate ezusb lib?
-   
-    return real_SetThreadPriority(hThread, nPriority);
-}
 
 static void iidxhook1_setup_d3d9_hooks(
     const struct iidxhook_config_gfx *config_gfx,
@@ -203,6 +140,9 @@ my_OpenProcess(DWORD dwDesiredAccess, BOOL bInheritHandle, DWORD dwProcessId)
     struct iidxhook_config_misc config_misc;
     struct iidxhook_config_sec config_sec;
 
+    HANDLE main_thread;
+    DWORD main_thread_id;
+
     if (iidxhook_init_check) {
         goto skip;
     }
@@ -213,42 +153,8 @@ my_OpenProcess(DWORD dwDesiredAccess, BOOL bInheritHandle, DWORD dwProcessId)
     log_info("--------------- Begin iidxhook my_OpenProcess ---------------");
     log_info("-------------------------------------------------------------");
 
-
-
-
-    // only valid for 9 and 10, TODO needs to go to its own module and cleaned up
-//         HMODULE handle = GetModuleHandleA("ezusb.dll");
-
-//         if (handle != NULL) {
-//             hook_table_apply(
-//             handle, "kernel32.dll", ezusb_hook_syms, lengthof(ezusb_hook_syms));
-//         } else {
-//             log_warning("Could not find ezusb.dll");
-//         }
-
-// iidxhook_util_proc_monitor_init();
-
-
-
-
+    main_thread = GetCurrentThread();
     main_thread_id = GetCurrentThreadId();
-    main_thread_handle = GetCurrentThread();
-
-    // TODO move to own module, make feature flag triggerable
-    SetThreadPriority(main_thread_handle, THREAD_PRIORITY_TIME_CRITICAL);
-
-    // TODO move to own module, make feature flag triggerable
-    // the following requires at least a quad core CPU but can reduce micro stutters further
-    // pin main thread to core 0
-    // pin IO thread to core 1
-    // pin all other threads to cores 2 and 3
-    DWORD_PTR dwThreadAffinityMask = 1 << 0; // CPU core 0
-    DWORD_PTR dwPreviousAffinityMask = SetThreadAffinityMask(main_thread_handle, dwThreadAffinityMask);
-    if (dwPreviousAffinityMask == 0)
-    {
-        // error handling code
-        log_warning("Setting affinity mask failed");
-    }
 
     config = cconfig_init();
 
@@ -354,6 +260,11 @@ my_OpenProcess(DWORD dwDesiredAccess, BOOL bInheritHandle, DWORD dwProcessId)
         ezusb_log_hook_init();
         ezusb_mon_hook_init();
     }
+
+    iidxhook_d3d9_frame_pace_init(main_thread_id, 59.9345);
+    // iidxhook_d3d9_frame_mon_init(59.9345);
+
+    iidxhook_util_proc_perf_init(main_thread);
 
     log_info("-------------------------------------------------------------");
     log_info("---------------- End iidxhook my_OpenProcess ----------------");

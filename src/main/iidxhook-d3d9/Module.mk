@@ -6,3 +6,5 @@ libs_iidxhook-d3d9     := \
 
 src_iidxhook-d3d9     := \
     bb-scale-hd.c \
+    frame-mon.c \
+    frame-pace.c \
