@@ -55,7 +55,7 @@ static uint64_t iidxhook_d3d9_frame_pace_get_cpu_ticks()
 }
 
 // Source and reference implementation:
-// https://nkga.github.io/post/frame-pacing-analysis-of-the-game-loop/
+// https://github.com/PCSX2/pcsx2/blob/f26031cada6893ac306af73255d337e50a8f73f9/pcsx2/Counters.cpp#L563
 static void iidxhook_d3d9_frame_pace_do_post_frame()
 {
     // -----------------------------------------------------------------------

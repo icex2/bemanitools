@@ -46,6 +46,7 @@ static const struct hook_symbol iidxhok_util_proc_mcore_hook_syms[] = {
     },
 };
 
+static enum IIDXHOOK_UTIL_PROC_MCORE_CPU_CORES iidxhook_util_proc_mcore_cpu_cores;
 static int iidxhook_util_proc_mcore_thread_priority_blocklist[3];
 
 static HANDLE STDCALL my_CreateThread(
@@ -98,15 +99,6 @@ static BOOL STDCALL my_SetThreadPriority(
     // Enforce normal priority on all threads
     return real_SetThreadPriority(hThread, THREAD_PRIORITY_NORMAL);
 }
-
-// static uint8_t iidxhook_util_proc_mcore_get_hw_cpu_count()
-// {
-//     SYSTEM_INFO sysInfo;
-    
-//     GetSystemInfo(&sysInfo);
-
-//     return sysInfo.dwNumberOfProcessors;
-// }
 
 static size_t iidxhook_util_proc_mcore_find_ezusb_io_threads(struct proc_thread_info **io_thread_infos)
 {
@@ -165,8 +157,17 @@ static void iidxhook_util_proc_mcore_patch_io_threads()
 
     count = iidxhook_util_proc_mcore_find_ezusb_io_threads(&thread_infos);
 
-    priority = THREAD_PRIORITY_TIME_CRITICAL;
-    affinity = PROC_THREAD_CPU_AFFINITY_CORE(1);
+    switch (iidxhook_util_proc_mcore_cpu_cores) {
+        case IIDXHOOK_UTIL_PROC_MCORE_CPU_CORES_2:
+        case IIDXHOOK_UTIL_PROC_MCORE_CPU_CORES_4:
+            priority = THREAD_PRIORITY_TIME_CRITICAL;
+            affinity = PROC_THREAD_CPU_AFFINITY_CORE(1);
+            break;
+
+        default:
+            log_fatal("Illegal state, case %d", iidxhook_util_proc_mcore_cpu_cores);
+            break;
+    }
     
     // TODO how to handle this if we don't have the ezusb module? how to detect which thread is the IO thread?
 
@@ -198,8 +199,17 @@ static void iidxhook_util_proc_mcore_patch_main_thread(int thread_id)
     int priority;
     uint32_t affinity;
 
-    priority = THREAD_PRIORITY_TIME_CRITICAL;
-    affinity = PROC_THREAD_CPU_AFFINITY_CORE(0);
+    switch (iidxhook_util_proc_mcore_cpu_cores) {
+        case IIDXHOOK_UTIL_PROC_MCORE_CPU_CORES_2:
+        case IIDXHOOK_UTIL_PROC_MCORE_CPU_CORES_4:
+            priority = THREAD_PRIORITY_TIME_CRITICAL;
+            affinity = PROC_THREAD_CPU_AFFINITY_CORE(0);
+            break;
+
+        default:
+            log_fatal("Illegal state, case %d", iidxhook_util_proc_mcore_cpu_cores);
+            break;
+    }
 
     iidxhook_util_proc_mcore_patch_thread(thread_id, priority, affinity, "main");
 
@@ -216,8 +226,21 @@ static void iidxhook_util_proc_mcore_patch_other_threads(int main_thread_id)
 
     count = proc_thread_scan_threads_current_process(&thread_infos);
 
-    priority = THREAD_PRIORITY_NORMAL;
-    affinity = PROC_THREAD_CPU_AFFINITY_CORE(2) | PROC_THREAD_CPU_AFFINITY_CORE(3);
+    switch (iidxhook_util_proc_mcore_cpu_cores) {
+        case IIDXHOOK_UTIL_PROC_MCORE_CPU_CORES_2:
+            priority = THREAD_PRIORITY_NORMAL;
+            affinity = PROC_THREAD_CPU_AFFINITY_CORE(1);
+            break;
+
+        case IIDXHOOK_UTIL_PROC_MCORE_CPU_CORES_4:
+            priority = THREAD_PRIORITY_NORMAL;
+            affinity = PROC_THREAD_CPU_AFFINITY_CORE(2) | PROC_THREAD_CPU_AFFINITY_CORE(3);
+            break;
+
+        default:
+            log_fatal("Illegal state, case %d", iidxhook_util_proc_mcore_cpu_cores);
+            break;
+    }
 
     for (size_t i = 0; i < count; i++) {
         if (!proc_thread_proc_get_origin_module_name(
@@ -241,14 +264,54 @@ static void iidxhook_util_proc_mcore_patch_other_threads(int main_thread_id)
     }
 }
 
+static enum IIDXHOOK_UTIL_PROC_MCORE_CPU_CORES iidxhook_util_proc_mcore_auto_detected()
+{
+    SYSTEM_INFO sysInfo;
+    enum IIDXHOOK_UTIL_PROC_MCORE_CPU_CORES res;
+    
+    GetSystemInfo(&sysInfo);
+
+    if (sysInfo.dwNumberOfProcessors == 1) {
+        res = IIDXHOOK_UTIL_PROC_MCORE_CPU_CORES_1;
+    } else if (sysInfo.dwNumberOfProcessors >= 2 && sysInfo.dwNumberOfProcessors < 4) {
+        res = IIDXHOOK_UTIL_PROC_MCORE_CPU_CORES_2;
+    } else if (sysInfo.dwNumberOfProcessors > 4) {
+        res = IIDXHOOK_UTIL_PROC_MCORE_CPU_CORES_4;
+    } else {
+        log_fatal("Illegal state determining CPU core count, value %ld", sysInfo.dwNumberOfProcessors);
+        res = IIDXHOOK_UTIL_PROC_MCORE_CPU_CORES_1;
+    }
+
+    log_info("Auto detected CPU count %ld, applying mode %d", sysInfo.dwNumberOfProcessors, res);
+
+    return res;
+}
+
 void iidxhook_util_proc_mcore_init(
         int main_thread_id,
         enum IIDXHOOK_UTIL_PROC_MCORE_CPU_CORES cpu_cores)
 {
-    // uint8_t cpu_core_count;
+    switch (cpu_cores) {
+        case IIDXHOOK_UTIL_PROC_MCORE_CPU_CORES_AUTO:
+            iidxhook_util_proc_mcore_cpu_cores = iidxhook_util_proc_mcore_auto_detected();
+            break;
 
-    // TODO have different configurations for single core, 2 and 4 core
-    
+        case IIDXHOOK_UTIL_PROC_MCORE_CPU_CORES_1:
+            // Do nothing in this case and keep everything stock
+            log_info("Single core option does not apply changes, skip module");
+            return;
+
+        case IIDXHOOK_UTIL_PROC_MCORE_CPU_CORES_2:
+        case IIDXHOOK_UTIL_PROC_MCORE_CPU_CORES_4:
+            iidxhook_util_proc_mcore_cpu_cores = cpu_cores;
+            break;
+
+        case IIDXHOOK_UTIL_PROC_MCORE_CPU_CORES_INVALID:
+        default:
+            log_fatal("Illegal state, case %d", cpu_cores);
+            break;
+    }
+
     iidxhook_util_proc_mcore_patch_main_thread(main_thread_id);
     iidxhook_util_proc_mcore_patch_io_threads();
     iidxhook_util_proc_mcore_patch_other_threads(main_thread_id);
