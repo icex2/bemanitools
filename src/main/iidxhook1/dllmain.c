@@ -39,7 +39,7 @@
 #include "iidxhook-util/eamuse.h"
 #include "iidxhook-util/effector.h"
 #include "iidxhook-util/proc-mon.h"
-#include "iidxhook-util/proc-perf.h"
+#include "iidxhook-util/proc-mcore.h"
 #include "iidxhook-util/settings.h"
 
 #include "iidxhook1/config-iidxhook1.h"
@@ -139,7 +139,6 @@ my_OpenProcess(DWORD dwDesiredAccess, BOOL bInheritHandle, DWORD dwProcessId)
     struct iidxhook_config_misc config_misc;
     struct iidxhook_config_sec config_sec;
 
-    HANDLE main_thread;
     DWORD main_thread_id;
 
     if (iidxhook_init_check) {
@@ -152,7 +151,7 @@ my_OpenProcess(DWORD dwDesiredAccess, BOOL bInheritHandle, DWORD dwProcessId)
     log_info("--------------- Begin iidxhook my_OpenProcess ---------------");
     log_info("-------------------------------------------------------------");
 
-    main_thread = GetCurrentThread();
+    // TODO replace with proc_thread_get_main_thread (???)
     main_thread_id = GetCurrentThreadId();
 
     config = cconfig_init();
@@ -269,7 +268,7 @@ my_OpenProcess(DWORD dwDesiredAccess, BOOL bInheritHandle, DWORD dwProcessId)
     //     false,
     //     NULL);
 
-    iidxhook_util_proc_perf_init(main_thread, true, true);
+    iidxhook_util_proc_mcore_init(main_thread_id, IIDXHOOK_UTIL_PROC_MCORE_CPU_CORES_4);
 
     log_info("-------------------------------------------------------------");
     log_info("---------------- End iidxhook my_OpenProcess ----------------");

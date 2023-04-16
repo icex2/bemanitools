@@ -6,6 +6,7 @@
 
 #include "util/log.h"
 #include "util/mem.h"
+#include "util/proc.h"
 #include "util/time.h"
 
 static DWORD STDCALL my_GetVersion();
@@ -161,10 +162,9 @@ static HANDLE STDCALL my_CreateThread(
     DWORD current_thread_id;
     struct iidxhook_proc_mon_thread_proc_monitor_data *proc_data;
 
-    GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
-                           (LPCTSTR)lpStartAddress, &module_handle);
-    GetModuleFileNameA(module_handle, module_name, sizeof(module_name));
     current_thread_id = GetCurrentThreadId();
+    module_handle = proc_thread_proc_get_origin_module(lpStartAddress);
+    proc_thread_proc_get_origin_module_path(lpStartAddress, module_name, sizeof(module_name));
 
     log_misc("CreateThread(module_handle %p, module_name %s, current_thread_id %ld, lpThreadAttributes %p, dwStackSize %Iu, lpStartAddress %p, lpParameter %p, dwCreationFlags 0x%lx, lpThreadId %p)",
         module_handle,
@@ -207,16 +207,18 @@ static BOOL STDCALL my_SetThreadPriority(
     HANDLE module_handle;
     char module_name[MAX_PATH];
     DWORD thread_id;
+    void* thread_proc;
 
-    module_handle = GetModuleHandleA(NULL);
-    GetModuleFileNameA(module_handle, module_name, sizeof(module_name));
     thread_id = GetThreadId(hThread);
+    thread_proc = proc_thread_get_proc_address(thread_id);
+    module_handle = proc_thread_proc_get_origin_module(thread_proc);
+    proc_thread_proc_get_origin_module_path(thread_proc, module_name, sizeof(module_name));
 
-    log_misc("SetThreadPriority(module_handle %p, module_name %s, thread_id %ld, hThread %p, nPriority %d)", module_handle, module_name, thread_id, hThread, nPriority);
+    log_misc("SetThreadPriority(module_handle %p, module_name %s, thread_id %ld, hThread %p, proc_address %p, nPriority %d)", module_handle, module_name, thread_id, hThread, thread_proc, nPriority);
 
     res = real_SetThreadPriority(hThread, nPriority);
 
-    log_misc("SetThreadPriority(module_handle %p, module_name %s, thread_id %ld, hThread %p, nPriority %d): %d", module_handle, module_name, thread_id, hThread, nPriority, res);
+    log_misc("SetThreadPriority(module_handle %p, module_name %s, thread_id %ld, hThread %p, proc_address %p, nPriority %d): %d", module_handle, module_name, thread_id, hThread, thread_proc, nPriority, res);
 
     return res;
 }

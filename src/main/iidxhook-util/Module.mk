@@ -18,5 +18,5 @@ src_iidxhook-util     := \
     effector.c \
     log-server.c \
     proc-mon.c \
-    proc-perf.c \
+    proc-mcore.c \
     settings.c \

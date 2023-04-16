@@ -136,6 +136,8 @@ static DWORD STDCALL my_SleepEx(DWORD dwMilliseconds, BOOL bAlertable)
 
 void iidxhook_d3d9_frame_pace_init(DWORD main_thread_id, double target_frame_rate_hz)
 {
+    log_assert(main_thread_id != -1);
+
     // Cache once
     QueryPerformanceFrequency(&iidxhook_d3d9_frame_pace_perf_counter_freq);    
 
