@@ -110,15 +110,28 @@ static FILE* iidxhook_d3d9_frame_mon_open_out_file(const char* out_path)
     char now_timestamp[64];
     char out_file_path[MAX_PATH];
     FILE* file;
+    const char* filename_module;
 
     GetModuleFileName(NULL, module_name, sizeof(module_name));
 
-    if (!util_datetime_now_iso_8601_formated(now_timestamp, sizeof(now_timestamp))) {
+    filename_module = strrchr(module_name, '\\');
+
+    if (filename_module == NULL) {
+        // no backslashes found, use the entire path
+        filename_module = module_name;
+    } else {
+        // skip the backslash
+        filename_module++;
+    }
+
+    if (!util_datetime_now_formated(now_timestamp, sizeof(now_timestamp))) {
         log_warning("Formatting timestamp failed");
     }
 
-    if (!str_multi_cat(out_file_path, sizeof(out_file_path), out_path, "/", 
-            "frame-mon-stats-", module_name, "-", now_timestamp, ".csv")) {
+    memset(out_file_path, 0, sizeof(out_file_path));
+
+    if (!str_multi_cat(out_file_path, sizeof(out_file_path), out_path, "\\", 
+            "frame-mon-stats-", filename_module, "-", now_timestamp, ".csv")) {
         log_fatal("Formatting output file name failed");
     }
 

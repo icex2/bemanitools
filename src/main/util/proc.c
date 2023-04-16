@@ -203,24 +203,11 @@ bool proc_thread_set_priority(int thread_id, int priority)
     return res;
 }
 
-bool proc_thread_set_affinity(int thread_id, uint32_t cpu, ...)
+bool proc_thread_set_affinity(int thread_id, uint32_t cpu_mask)
 {
     HANDLE thread;
     DWORD_PTR affinity_mask;
     DWORD_PTR prev_affinity_mask;
-    va_list args;
-
-    va_start(args, cpu);
-
-    affinity_mask = 0;
-
-    for (int i = 0; i < cpu; i++)
-    {
-        log_info("!!!!");
-        affinity_mask |= (1 << va_arg(args, uint32_t));
-    }
-
-    va_end(args);
 
     thread = proc_thread_get_handle(thread_id);
 
@@ -228,10 +215,9 @@ bool proc_thread_set_affinity(int thread_id, uint32_t cpu, ...)
         return false;
     }
 
-    log_misc("THREAD AFFINITY APPLY: %X", affinity_mask);
-
+    affinity_mask = cpu_mask;
     prev_affinity_mask = SetThreadAffinityMask(thread, affinity_mask);
-
+    
     CloseHandle(thread);
 
     return prev_affinity_mask != 0;

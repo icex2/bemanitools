@@ -32,63 +32,74 @@ static const struct hook_symbol iidxhok_d3d9_frame_pace_hook_syms[] = {
 static bool iidxhook_d3d9_frame_pace_initialized;
 
 static DWORD iidxhook_d3d9_frame_pace_main_thread_id = -1;
-static LARGE_INTEGER iidxhook_d3d9_frame_pace_perf_counter_freq;
-static uint64_t iidxhook_d3d9_frame_pace_target_frame_time_us;
 
-static int64_t iidxhook_d3d9_frame_pace_prev_frame_time_us;
+static int64_t iidxhook_d3d9_frame_pace_target_frame_time_cpu_ticks;
+static int64_t iidxhook_d3d9_frame_pace_frame_time_start_cpu_ticks;
 
-static int64_t iidxhook_d3d9_frame_pace_query_us()
+static uint64_t iidxhook_d3d9_frame_pace_get_cpu_tick_frequency()
+{
+    LARGE_INTEGER freq;
+
+    QueryPerformanceFrequency(&freq);
+
+    return freq.QuadPart;
+}
+
+static uint64_t iidxhook_d3d9_frame_pace_get_cpu_ticks()
 {
     LARGE_INTEGER tick;
 
     QueryPerformanceCounter(&tick);
 
-    return (tick.QuadPart * 1000000ll) / iidxhook_d3d9_frame_pace_perf_counter_freq.QuadPart;
-}
-
-static void iidxhook_d3d9_frame_pace_sleep_us(int64_t sleep_us)
-{
-    if (sleep_us > 2000) {
-        uint32_t ms = (sleep_us - 2000) / 1000;
-
-        Sleep(ms);
-    } else if (sleep_us > 0) {
-        // Remark: This is only available on Vista and newer
-        // TODO make this a feature switch to enable/disable burning CPU?
-        // YieldProcessor();
-        
-    } else {
-        // If behind time, don't delay any further
-    }
+    return tick.QuadPart;
 }
 
 // Source and reference implementation:
 // https://nkga.github.io/post/frame-pacing-analysis-of-the-game-loop/
 static void iidxhook_d3d9_frame_pace_do_post_frame()
 {
-    int64_t now_us;
-    int64_t diff_us;
-    int64_t sleep_us;
-    
-    now_us = iidxhook_d3d9_frame_pace_query_us();
+    // -----------------------------------------------------------------------
 
-    if (iidxhook_d3d9_frame_pace_target_frame_time_us > 0) {
-        while (true) {
-            now_us = iidxhook_d3d9_frame_pace_query_us();
+    const int64_t m_iTicks = iidxhook_d3d9_frame_pace_target_frame_time_cpu_ticks;
+    int64_t m_iStart = iidxhook_d3d9_frame_pace_frame_time_start_cpu_ticks;
 
-            diff_us = now_us - iidxhook_d3d9_frame_pace_prev_frame_time_us;
+    // Compute when we would expect this frame to end, assuming everything goes perfectly perfect.
+    const uint64_t uExpectedEnd = m_iStart + m_iTicks;
+    // The current tick we actually stopped on.
+	const uint64_t iEnd = iidxhook_d3d9_frame_pace_get_cpu_ticks();   
+    // The diff between when we stopped and when we expected to.
+	const int64_t sDeltaTime = iEnd - uExpectedEnd;    
 
-            if (diff_us >= iidxhook_d3d9_frame_pace_target_frame_time_us) {
-                break;
-            }
+	// If frame ran too long...
+	if (sDeltaTime >= m_iTicks)
+	{
+		// ... Fudge the next frame start over a bit. Prevents fast forward zoomies.
+		m_iStart += (sDeltaTime / m_iTicks) * m_iTicks;
+        iidxhook_d3d9_frame_pace_frame_time_start_cpu_ticks = m_iStart;
+		return;
+	}
 
-            sleep_us = iidxhook_d3d9_frame_pace_target_frame_time_us - diff_us;
+	// Conversion of delta from CPU ticks (microseconds) to milliseconds
+	int32_t msec = (int32_t) ((sDeltaTime * -1000) / (int64_t) iidxhook_d3d9_frame_pace_get_cpu_tick_frequency());
 
-            iidxhook_d3d9_frame_pace_sleep_us(sleep_us);
-        }
-    }
+	// If any integer value of milliseconds exists, sleep it off.
+	// Prior comments suggested that 1-2 ms sleeps were inaccurate on some OSes;
+	// further testing suggests instead that this was utter bullshit.
+	if (msec > 1)
+	{
+		real_Sleep(msec - 1);
+	}
 
-    iidxhook_d3d9_frame_pace_prev_frame_time_us = now_us;
+	// Conversion to milliseconds loses some precision; after sleeping off whole milliseconds,
+	// spin the thread without sleeping until we finally reach our expected end time.
+	while (iidxhook_d3d9_frame_pace_get_cpu_ticks() < uExpectedEnd)
+	{
+		// SKREEEEEEEE
+	}
+
+	// Finally, set our next frame start to when this one ends
+	m_iStart = uExpectedEnd;
+    iidxhook_d3d9_frame_pace_frame_time_start_cpu_ticks = m_iStart;
 }
 
 // TODO must be renamed to framerate monitor with smoother/pacer
@@ -134,23 +145,29 @@ static DWORD STDCALL my_SleepEx(DWORD dwMilliseconds, BOOL bAlertable)
     return real_SleepEx(dwMilliseconds, bAlertable);
 }
 
+static void iidxhook_d3d9_frame_pace_timings_init(double target_frame_rate_hz)
+{
+    double tick_rate;
+
+    tick_rate = iidxhook_d3d9_frame_pace_get_cpu_tick_frequency();
+    iidxhook_d3d9_frame_pace_target_frame_time_cpu_ticks = (int64_t) (tick_rate / target_frame_rate_hz);
+    iidxhook_d3d9_frame_pace_frame_time_start_cpu_ticks = iidxhook_d3d9_frame_pace_get_cpu_ticks();
+}
+
 void iidxhook_d3d9_frame_pace_init(DWORD main_thread_id, double target_frame_rate_hz)
 {
     log_assert(main_thread_id != -1);
 
-    // Cache once
-    QueryPerformanceFrequency(&iidxhook_d3d9_frame_pace_perf_counter_freq);    
+    iidxhook_d3d9_frame_pace_timings_init(target_frame_rate_hz);
 
     iidxhook_d3d9_frame_pace_main_thread_id = main_thread_id;
-    iidxhook_d3d9_frame_pace_target_frame_time_us = (uint64_t) (1000.0 * 1000.0 / target_frame_rate_hz);
-    iidxhook_d3d9_frame_pace_prev_frame_time_us = iidxhook_d3d9_frame_pace_query_us();
 
     iidxhook_d3d9_frame_pace_initialized = true;
 
     hook_table_apply(
             NULL, "kernel32.dll", iidxhok_d3d9_frame_pace_hook_syms, lengthof(iidxhok_d3d9_frame_pace_hook_syms));
 
-    log_info("Initialized, target frame rate in hz %f, target frame time in us %llu", target_frame_rate_hz, iidxhook_d3d9_frame_pace_target_frame_time_us);
+    log_info("Initialized, target frame rate in hz %f, target frame time in cpu ticks %llu", target_frame_rate_hz, iidxhook_d3d9_frame_pace_target_frame_time_cpu_ticks);
 }
 
 HRESULT iidxhook_d3d9_frame_pace_d3d9_irp_handler(struct hook_d3d9_irp *irp)

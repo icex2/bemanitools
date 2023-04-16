@@ -3,7 +3,7 @@
 #include "util/datetime.h"
 #include "util/log.h"
 
-bool util_datetime_now_iso_8601_formated(char* buffer, size_t len)
+bool util_datetime_now_formated(char* buffer, size_t len)
 {
     log_assert(buffer);
     
@@ -13,7 +13,9 @@ bool util_datetime_now_iso_8601_formated(char* buffer, size_t len)
     current = time(NULL);
     local = localtime(&current);
 
-    if (strftime(buffer, len, "%Y-%m-%dT%H:%M:%SZ", local) == 0) {
+    // Don't use : for time to adhere to ISO8601 because this makes this format
+    // not usable in filenames, e.g. for logfiles
+    if (strftime(buffer, len, "%Y-%m-%dT%H-%M-%SZ", local) == 0) {
         return false;
     }
 

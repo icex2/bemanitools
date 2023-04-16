@@ -115,17 +115,16 @@ bool str_multi_cat(char *dest, size_t dnchars, const char *src, ...)
     va_start(args, src);
 
     const char *arg = src;
-    size_t dest_len = strlen(dest);
+    size_t dest_len = 0;
 
     while (arg != NULL) {
         size_t arg_len = strlen(arg);
         size_t nchars = dnchars - dest_len - 1;
 
-        if (nchars >= 0) {
-            strncat(dest, arg, nchars);
-        }
+        str_cpy(dest, nchars, arg);
 
         dest_len += arg_len;
+        dest += arg_len;
         arg = va_arg(args, const char *);
     }
 

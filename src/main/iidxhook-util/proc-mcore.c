@@ -9,14 +9,36 @@
 
 #include "proc-mcore.h"
 
+static HANDLE STDCALL my_CreateThread(
+    LPSECURITY_ATTRIBUTES lpThreadAttributes,
+    SIZE_T dwStackSize,
+    LPTHREAD_START_ROUTINE lpStartAddress,
+    __drv_aliasesMem LPVOID lpParameter,
+    DWORD dwCreationFlags,
+    LPDWORD lpThreadId);
 static BOOL STDCALL my_SetThreadPriority(
     HANDLE hThread,
     int nPriority);
+
+static HANDLE (STDCALL *real_CreateThread)(
+    LPSECURITY_ATTRIBUTES lpThreadAttributes,
+    SIZE_T dwStackSize,
+    LPTHREAD_START_ROUTINE lpStartAddress,
+    __drv_aliasesMem LPVOID lpParameter,
+    DWORD dwCreationFlags,
+    LPDWORD lpThreadId);
 static BOOL (STDCALL *real_SetThreadPriority)(
     HANDLE hThread,
     int nPriority);
 
+static void iidxhook_util_proc_mcore_patch_thread(int thread_id, int priority, uint32_t affinity, const char* ident);
+
 static const struct hook_symbol iidxhok_util_proc_mcore_hook_syms[] = {
+    {
+        .name = "CreateThread",
+        .patch = my_CreateThread,
+        .link = (void **) &real_CreateThread,
+    },
     {
         .name = "SetThreadPriority",
         .patch = my_SetThreadPriority,
@@ -25,6 +47,34 @@ static const struct hook_symbol iidxhok_util_proc_mcore_hook_syms[] = {
 };
 
 static int iidxhook_util_proc_mcore_thread_priority_blocklist[3];
+
+static HANDLE STDCALL my_CreateThread(
+        LPSECURITY_ATTRIBUTES lpThreadAttributes,
+        SIZE_T dwStackSize,
+        LPTHREAD_START_ROUTINE lpStartAddress,
+        __drv_aliasesMem LPVOID lpParameter,
+        DWORD dwCreationFlags,
+        LPDWORD lpThreadId)
+{
+    HANDLE handle;
+    int thread_id;
+    int priority;
+    uint32_t affinity;
+
+    handle = real_CreateThread(lpThreadAttributes, dwStackSize, lpStartAddress, lpParameter, dwCreationFlags, lpThreadId);   
+
+    // Ensure that any new threads getting created are scheduled to the right cores with normal
+    // priorities
+    if (handle != INVALID_HANDLE_VALUE) {
+        thread_id = GetThreadId(handle);
+        priority = THREAD_PRIORITY_NORMAL;
+        affinity = PROC_THREAD_CPU_AFFINITY_CORE(2) | PROC_THREAD_CPU_AFFINITY_CORE(3);
+
+        iidxhook_util_proc_mcore_patch_thread(thread_id, priority, affinity, "other");
+    }
+
+    return handle;
+}
 
 static BOOL STDCALL my_SetThreadPriority(
         HANDLE hThread,
@@ -41,17 +91,22 @@ static BOOL STDCALL my_SetThreadPriority(
         }     
     }
 
-    return real_SetThreadPriority(hThread, nPriority);
+    if (nPriority != THREAD_PRIORITY_NORMAL) {
+        log_misc("Enforcing priority %d -> %d on thread id %d", nPriority, THREAD_PRIORITY_NORMAL, thread_id);
+    }
+
+    // Enforce normal priority on all threads
+    return real_SetThreadPriority(hThread, THREAD_PRIORITY_NORMAL);
 }
 
-static uint8_t iidxhook_util_proc_mcore_get_hw_cpu_count()
-{
-    SYSTEM_INFO sysInfo;
+// static uint8_t iidxhook_util_proc_mcore_get_hw_cpu_count()
+// {
+//     SYSTEM_INFO sysInfo;
     
-    GetSystemInfo(&sysInfo);
+//     GetSystemInfo(&sysInfo);
 
-    return sysInfo.dwNumberOfProcessors;
-}
+//     return sysInfo.dwNumberOfProcessors;
+// }
 
 static size_t iidxhook_util_proc_mcore_find_ezusb_io_threads(struct proc_thread_info **io_thread_infos)
 {
@@ -87,13 +142,31 @@ static size_t iidxhook_util_proc_mcore_find_ezusb_io_threads(struct proc_thread_
     return count_ezusb;
 }
 
-static void patch_ezusb_threads()
+static void iidxhook_util_proc_mcore_patch_thread(int thread_id, int priority, uint32_t affinity, const char* ident)
+{
+    if (!proc_thread_set_priority(thread_id, priority)) {
+        log_fatal("Setting thread(%s) priority, id %d, priority %d failed", ident, thread_id, priority);
+    }
+
+    if (!proc_thread_set_affinity(thread_id, affinity)) {
+        log_fatal("Setting thread(%s) affinity, id %d, affinity %d failed", ident, thread_id, affinity);
+    }
+
+    log_misc("Patch(%s) thread id %d, priority %d, cpu affinity 0x%x", ident, thread_id, priority, affinity);
+}
+
+static void iidxhook_util_proc_mcore_patch_io_threads()
 {
     size_t count;
     struct proc_thread_info* thread_infos;
     char origin_module_name[MAX_PATH];
+    int priority;
+    uint32_t affinity;
 
     count = iidxhook_util_proc_mcore_find_ezusb_io_threads(&thread_infos);
+
+    priority = THREAD_PRIORITY_TIME_CRITICAL;
+    affinity = PROC_THREAD_CPU_AFFINITY_CORE(1);
     
     // TODO how to handle this if we don't have the ezusb module? how to detect which thread is the IO thread?
 
@@ -114,89 +187,74 @@ static void patch_ezusb_threads()
             thread_infos[i].origin_module,
             origin_module_name);
 
-        if (!proc_thread_set_priority(thread_infos[i].id, THREAD_PRIORITY_TIME_CRITICAL)) {
-            log_fatal("Setting thread priority to time critical for thread %d failed", thread_infos[i].id);
-        }
-
-        if (!proc_thread_set_affinity(thread_infos[i].id, 1)) {
-            log_fatal("Setting thread affinity to cpu core 1 for thread %d failed", thread_infos[i].id);
-        }
+        iidxhook_util_proc_mcore_patch_thread(thread_infos[i].id, priority, affinity, "ezusb");
 
         iidxhook_util_proc_mcore_thread_priority_blocklist[i] = thread_infos[i].id;
     }
 }
 
-static void patch_main_thread(int thread_id)
+static void iidxhook_util_proc_mcore_patch_main_thread(int thread_id)
 {
-    if (!proc_thread_set_priority(thread_id, THREAD_PRIORITY_TIME_CRITICAL)) {
-        log_fatal("Setting main thread priority to time critical for thread %d failed", thread_id);
-    }
+    int priority;
+    uint32_t affinity;
 
-    if (!proc_thread_set_affinity(thread_id, 0)) {
-        log_fatal("Setting main thread affinity to cpu core 0 for thread %d failed", thread_id);
-    }
+    priority = THREAD_PRIORITY_TIME_CRITICAL;
+    affinity = PROC_THREAD_CPU_AFFINITY_CORE(0);
+
+    iidxhook_util_proc_mcore_patch_thread(thread_id, priority, affinity, "main");
 
     iidxhook_util_proc_mcore_thread_priority_blocklist[2] = thread_id;
+}
+
+static void iidxhook_util_proc_mcore_patch_other_threads(int main_thread_id)
+{
+    size_t count;
+    struct proc_thread_info* thread_infos;
+    char origin_module_name[MAX_PATH];
+    int priority;
+    uint32_t affinity;
+
+    count = proc_thread_scan_threads_current_process(&thread_infos);
+
+    priority = THREAD_PRIORITY_NORMAL;
+    affinity = PROC_THREAD_CPU_AFFINITY_CORE(2) | PROC_THREAD_CPU_AFFINITY_CORE(3);
+
+    for (size_t i = 0; i < count; i++) {
+        if (!proc_thread_proc_get_origin_module_name(
+                thread_infos[i].proc,
+                origin_module_name,
+                sizeof(origin_module_name))) {
+            log_fatal("Getting origin module name of thread proc %p failed", thread_infos[i].proc);
+        }
+
+        // skip
+        if (!strcmp(origin_module_name, "ezusb.dll")) {
+            continue;
+        }
+
+        // skip
+        if (thread_infos[i].id == main_thread_id) {
+            continue;
+        }
+
+        iidxhook_util_proc_mcore_patch_thread(thread_infos[i].id, priority, affinity, "other");
+    }
 }
 
 void iidxhook_util_proc_mcore_init(
         int main_thread_id,
         enum IIDXHOOK_UTIL_PROC_MCORE_CPU_CORES cpu_cores)
 {
-    uint8_t cpu_core_count;
+    // uint8_t cpu_core_count;
+
+    // TODO have different configurations for single core, 2 and 4 core
     
-    // patch_ezusb_threads();
-    patch_main_thread(main_thread_id);
+    iidxhook_util_proc_mcore_patch_main_thread(main_thread_id);
+    iidxhook_util_proc_mcore_patch_io_threads();
+    iidxhook_util_proc_mcore_patch_other_threads(main_thread_id);
 
     hook_table_apply(
             NULL, "kernel32.dll", iidxhok_util_proc_mcore_hook_syms, lengthof(iidxhok_util_proc_mcore_hook_syms));
-
-    // switch (cpu_cores) {
-    //     case IIDXHOOK_UTIL_PROC_MCORE_CPU_CORES_AUTO:
-    //         iidxhook_util_proc_mcore_get_hw_cpu_count();
-
-    //         // TODO check return value and either go for 2 or 4 core optimization
-
-    //         break;
-
-    //     case IIDXHOOK_UTIL_PROC_MCORE_CPU_CORES_2:
-    //         cpu_core_count = 2;
-    //     case IIDXHOOK_UTIL_PROC_MCORE_CPU_CORES_4:
-    //         cpu_core_count = 4;
-    //         break; 
-    //     case IIDXHOOK_UTIL_PROC_MCORE_CPU_CORES_INVALID:
-    //     default:
-    //         log_fatal("Illegal state, value: %d", cpu_cores);
-    //         break;
-    // }
-
-    // TODO tricky, need a way to trap all thread creation, see proc-mon
-    // and a heuristic to determine which thread is which
-    // probably good to have a separate module with an IRP style thing like
-    // the d3d9 hook module that allows to patch into thread creation, starting etc
-    // -> hooklib/proc?
-
-    // cpu 1:
-        // don't do anything because single core
-    // cpu 2:
-        // boost main thread prio and pin it to single core, pin remaining threads to second core
-    // cpu 4:
-        // boost main thread prio and pin to core 1
-        // boost ezusb/IO thread prio and pin to core 2
-        // pin remaining threads to cores 3 and 4
-
-
-    // only valid for 9 and 10, TODO needs to go to its own module and cleaned up
-//         HMODULE handle = GetModuleHandleA("ezusb.dll");
-
-//         if (handle != NULL) {
-//             hook_table_apply(
-//             handle, "kernel32.dll", ezusb_hook_syms, lengthof(ezusb_hook_syms));
-//         } else {
-//             log_warning("Could not find ezusb.dll");
-//         }
-
-// iidxhook_util_proc_monitor_init();
 
     log_info("Initialized");
 }

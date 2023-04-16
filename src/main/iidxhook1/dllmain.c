@@ -57,9 +57,11 @@
     "Usage: inject.exe iidxhook1.dll <bm2dx.exe> [options...]"
 
 static const hook_d3d9_irp_handler_t iidxhook_d3d9_handlers[] = {
-    iidxhook_d3d9_frame_pace_d3d9_irp_handler,
     iidxhook_util_d3d9_irp_handler,
     iidxhook_d3d9_frame_mon_d3d9_irp_handler,
+    // Order is important for performance, frame pacing must come at the very end
+    // to include all timings from any prior hooks
+    iidxhook_d3d9_frame_pace_d3d9_irp_handler,
 };
 
 static HANDLE STDCALL my_OpenProcess(DWORD, BOOL, DWORD);
@@ -264,8 +266,8 @@ my_OpenProcess(DWORD dwDesiredAccess, BOOL bInheritHandle, DWORD dwProcessId)
     iidxhook_d3d9_frame_pace_init(main_thread_id, target_frame_rate);
     // iidxhook_d3d9_frame_mon_init(
     //     target_frame_rate,
-    //     false,
-    //     false,
+    //     0.1,
+    //     0.1,
     //     NULL);
 
     iidxhook_util_proc_mcore_init(main_thread_id, IIDXHOOK_UTIL_PROC_MCORE_CPU_CORES_4);
