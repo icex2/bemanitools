@@ -7,6 +7,7 @@
 #include <wchar.h>
 
 void str_cat(char *dest, size_t dnchars, const char *src);
+bool str_multi_cat(char *dest, size_t dnchars, const char *src, ...);
 void str_cpy(char *dest, size_t dnchars, const char *src);
 char *str_dup(const char *src);
 bool str_ends_with(const char *haystack, const char *needle);

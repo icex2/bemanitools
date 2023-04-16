@@ -22,6 +22,8 @@ static const struct hook_symbol iidxhok_util_proc_perf_hook_syms[] = {
     },
 };
 
+static bool iidxhook_util_proc_perf_main_thread_force_realtime_priority;
+
 static HANDLE iidxhook_util_proc_perf_main_thread_handle;
 
 // static const struct hook_symbol ezusb_hook_syms[] = {
@@ -37,7 +39,7 @@ static BOOL STDCALL my_SetThreadPriority(
         int nPriority)
 {
     if (hThread == iidxhook_util_proc_perf_main_thread_handle) {
-        log_info("Patch main thread, realtime priority");
+        log_misc("Force keep main thread on realtime priority");
         return real_SetThreadPriority(hThread, THREAD_PRIORITY_TIME_CRITICAL);
     } else {
         // TODO ???
@@ -49,34 +51,39 @@ static BOOL STDCALL my_SetThreadPriority(
     return real_SetThreadPriority(hThread, nPriority);
 }
 
-void iidxhook_util_proc_perf_init(HANDLE main_thread_handle)
+void iidxhook_util_proc_perf_init(
+        HANDLE main_thread_handle,
+        bool main_thread_force_realtime_priority,
+        bool multi_core_patch)
 {
     iidxhook_util_proc_perf_main_thread_handle = main_thread_handle;
+    iidxhook_util_proc_perf_main_thread_force_realtime_priority = main_thread_force_realtime_priority;
 
-    // Boost main thread prio to max to ensure the render loop is prioritzed on
-    // thread scheduling which reduces microstutters
-    SetThreadPriority(main_thread_handle, THREAD_PRIORITY_TIME_CRITICAL);
+    if (iidxhook_util_proc_perf_main_thread_force_realtime_priority) {
+        // Boost main thread prio to max to ensure the render loop is prioritzed on
+        // thread scheduling which reduces microstutters
+        SetThreadPriority(main_thread_handle, THREAD_PRIORITY_TIME_CRITICAL);
 
-    // the following requires at least a quad core CPU but can reduce micro stutters further
-    // pin main thread to core 0
-    // pin IO thread to core 1
-    // pin all other threads to cores 2 and 3
-    DWORD_PTR dwThreadAffinityMask = 1 << 0; // CPU core 0
-    DWORD_PTR dwPreviousAffinityMask = SetThreadAffinityMask(main_thread_handle, dwThreadAffinityMask);
-
-    // TODO set priority for IO thread -> how to get IO thread handle?
-    
-    if (dwPreviousAffinityMask == 0)
-    {
-        // error handling code
-        log_fatal("Setting affinity mask failed");
+        hook_table_apply(
+            NULL, "kernel32.dll", iidxhok_util_proc_perf_hook_syms, lengthof(iidxhok_util_proc_perf_hook_syms));
     }
 
-    hook_table_apply(
-            NULL, "kernel32.dll", iidxhok_util_proc_perf_hook_syms, lengthof(iidxhok_util_proc_perf_hook_syms));
+    if (multi_core_patch) {
+        // the following requires at least a quad core CPU but can reduce micro stutters further
+        // pin main thread to core 0
+        // pin IO thread to core 1
+        // pin all other threads to cores 2 and 3
+        DWORD_PTR dwThreadAffinityMask = 1 << 0; // CPU core 0
+        DWORD_PTR dwPreviousAffinityMask = SetThreadAffinityMask(main_thread_handle, dwThreadAffinityMask);
 
-
-
+        // TODO set priority for IO thread -> how to get IO thread handle?
+        
+        if (dwPreviousAffinityMask == 0)
+        {
+            // error handling code
+            log_fatal("Setting affinity mask failed");
+        }
+    }
 
     // only valid for 9 and 10, TODO needs to go to its own module and cleaned up
 //         HMODULE handle = GetModuleHandleA("ezusb.dll");
@@ -90,11 +97,5 @@ void iidxhook_util_proc_perf_init(HANDLE main_thread_handle)
 
 // iidxhook_util_proc_monitor_init();
 
-
-
-
-
-
-
-    log_info("Initialized");
+    log_info("Initialized, multi core patch %d, force main thread realtime priority %d", multi_core_patch, main_thread_force_realtime_priority);
 }

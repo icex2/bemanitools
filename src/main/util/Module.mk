@@ -5,6 +5,7 @@ src_util        := \
     cmdline.c \
     crc.c \
     crypto.c \
+    datetime.c \
     fs.c \
     hex.c \
     iobuf.c \

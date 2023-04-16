@@ -260,10 +260,16 @@ my_OpenProcess(DWORD dwDesiredAccess, BOOL bInheritHandle, DWORD dwProcessId)
         ezusb_mon_hook_init();
     }
 
-    iidxhook_d3d9_frame_pace_init(main_thread_id, 59.9345);
-    // iidxhook_d3d9_frame_mon_init(59.9345);
+    double target_frame_rate = 59.9345;
 
-    iidxhook_util_proc_perf_init(main_thread);
+    iidxhook_d3d9_frame_pace_init(main_thread_id, target_frame_rate);
+    // iidxhook_d3d9_frame_mon_init(
+    //     target_frame_rate,
+    //     false,
+    //     false,
+    //     NULL);
+
+    iidxhook_util_proc_perf_init(main_thread, true, true);
 
     log_info("-------------------------------------------------------------");
     log_info("---------------- End iidxhook my_OpenProcess ----------------");

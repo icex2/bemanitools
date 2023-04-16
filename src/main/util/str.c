@@ -1,6 +1,7 @@
 #include <windows.h>
 
 #include <ctype.h>
+#include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -106,6 +107,31 @@ void str_cat(char *dest, size_t dnchars, const char *src)
     }
 
     memcpy(dest + dlen, src, (slen + 1) * sizeof(char));
+}
+
+bool str_multi_cat(char *dest, size_t dnchars, const char *src, ...)
+{
+    va_list args;
+    va_start(args, src);
+
+    const char *arg = src;
+    size_t dest_len = strlen(dest);
+
+    while (arg != NULL) {
+        size_t arg_len = strlen(arg);
+        size_t nchars = dnchars - dest_len - 1;
+
+        if (nchars >= 0) {
+            strncat(dest, arg, nchars);
+        }
+
+        dest_len += arg_len;
+        arg = va_arg(args, const char *);
+    }
+
+    va_end(args);
+
+    return dest_len <= dnchars;
 }
 
 void str_cpy(char *dest, size_t dnchars, const char *src)

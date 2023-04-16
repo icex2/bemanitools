@@ -3,6 +3,11 @@
 
 #include <windows.h>
 
-void iidxhook_util_proc_perf_init(HANDLE main_thread_handle);
+#include <stdbool.h>
+
+void iidxhook_util_proc_perf_init(
+        HANDLE main_thread_handle,
+        bool main_thread_force_realtime_priority,
+        bool multi_core_patch);
 
 #endif

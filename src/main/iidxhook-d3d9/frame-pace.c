@@ -4,13 +4,17 @@
 
 #include <stdbool.h>
 
+#include "hook/table.h"
+
 #include "util/log.h"
+
+#include "frame-pace.h"
 
 static void STDCALL my_Sleep(DWORD dwMilliseconds);
 static void (STDCALL *real_Sleep)(DWORD dwMilliseconds);
 
-static void DWORD my_SleepEx(DWORD dwMilliseconds, BOOL bAlertable);
-static void (DWORD *real_SleepEx)(DWORD dwMilliseconds, BOOL bAlertable);
+static DWORD STDCALL my_SleepEx(DWORD dwMilliseconds, BOOL bAlertable);
+static DWORD (STDCALL *real_SleepEx)(DWORD dwMilliseconds, BOOL bAlertable);
 
 static const struct hook_symbol iidxhok_d3d9_frame_pace_hook_syms[] = {
     {
@@ -60,7 +64,7 @@ static void iidxhook_d3d9_frame_pace_sleep_us(int64_t sleep_us)
 
 // Source and reference implementation:
 // https://nkga.github.io/post/frame-pacing-analysis-of-the-game-loop/
-static void iidxhook_d3d9_frame_pace()
+static void iidxhook_d3d9_frame_pace_do_post_frame()
 {
     int64_t now_us;
     int64_t diff_us;
@@ -161,9 +165,11 @@ HRESULT iidxhook_d3d9_frame_pace_d3d9_irp_handler(struct hook_d3d9_irp *irp)
         hr = hook_d3d9_irp_invoke_next(irp);
 
         if (hr == S_OK) {
-            iidxhook_d3d9_frame_pace();
+            iidxhook_d3d9_frame_pace_do_post_frame();
         }
 
         return hr;
+    } else {
+        return hook_d3d9_irp_invoke_next(irp);
     }
 }
