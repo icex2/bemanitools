@@ -1,5 +1,4 @@
 #include <windows.h>
-#include <powrprof.h>
 
 #include <stdbool.h>
 #include <stdint.h>

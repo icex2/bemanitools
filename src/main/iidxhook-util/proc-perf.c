@@ -1,5 +1,12 @@
 #define LOG_MODULE "iidxhook-util-proc-perf"
 
+#include "hook/table.h"
+
+#include "util/defs.h"
+#include "util/log.h"
+
+#include "proc-perf.h"
+
 static BOOL STDCALL my_SetThreadPriority(
     HANDLE hThread,
     int nPriority);
@@ -15,6 +22,8 @@ static const struct hook_symbol iidxhok_util_proc_perf_hook_syms[] = {
     },
 };
 
+static HANDLE iidxhook_util_proc_perf_main_thread_handle;
+
 // static const struct hook_symbol ezusb_hook_syms[] = {
 //     {
 //         .name = "SetThreadPriority",
@@ -23,15 +32,11 @@ static const struct hook_symbol iidxhok_util_proc_perf_hook_syms[] = {
 //     },
 // };
 
-static DWORD main_thread_id = -1;
-static HANDLE main_thread_handle = INVALID_HANDLE_VALUE;
-
-
 static BOOL STDCALL my_SetThreadPriority(
         HANDLE hThread,
         int nPriority)
 {
-    if (hThread == iidxhook_util_proc_monitor_get_main_thread_handle()) {
+    if (hThread == iidxhook_util_proc_perf_main_thread_handle) {
         log_info("Patch main thread, realtime priority");
         return real_SetThreadPriority(hThread, THREAD_PRIORITY_TIME_CRITICAL);
     } else {
@@ -46,6 +51,8 @@ static BOOL STDCALL my_SetThreadPriority(
 
 void iidxhook_util_proc_perf_init(HANDLE main_thread_handle)
 {
+    iidxhook_util_proc_perf_main_thread_handle = main_thread_handle;
+
     // Boost main thread prio to max to ensure the render loop is prioritzed on
     // thread scheduling which reduces microstutters
     SetThreadPriority(main_thread_handle, THREAD_PRIORITY_TIME_CRITICAL);

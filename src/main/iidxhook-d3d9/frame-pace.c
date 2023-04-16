@@ -9,11 +9,19 @@
 static void STDCALL my_Sleep(DWORD dwMilliseconds);
 static void (STDCALL *real_Sleep)(DWORD dwMilliseconds);
 
+static void DWORD my_SleepEx(DWORD dwMilliseconds, BOOL bAlertable);
+static void (DWORD *real_SleepEx)(DWORD dwMilliseconds, BOOL bAlertable);
+
 static const struct hook_symbol iidxhok_d3d9_frame_pace_hook_syms[] = {
     {
         .name = "Sleep",
         .patch = my_Sleep,
         .link = (void **) &real_Sleep,
+    },
+    {
+        .name = "SleepEx",
+        .patch = my_SleepEx,
+        .link = (void **) &real_SleepEx,
     },
 };
 
@@ -106,6 +114,20 @@ static void STDCALL my_Sleep(DWORD dwMilliseconds)
     }
 
     real_Sleep(dwMilliseconds);
+}
+
+static DWORD STDCALL my_SleepEx(DWORD dwMilliseconds, BOOL bAlertable)
+{
+    // Heuristic, but applies only in two spots
+    // - frame pacing code (dynamic value)
+    // - Another spot with sleep time set to 1 -> reduces CPU banging
+    if (iidxhook_d3d9_frame_pace_main_thread_id == GetCurrentThreadId()) {
+        if (dwMilliseconds <= 16) {
+            return 0;
+        }
+    }
+
+    return real_SleepEx(dwMilliseconds, bAlertable);
 }
 
 void iidxhook_d3d9_frame_pace_init(DWORD main_thread_id, double target_frame_rate_hz)

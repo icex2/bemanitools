@@ -36,6 +36,40 @@ assumed engine generations (TODO verify):
 * 27 - 29 (two cabint types, bia2x added, 120 fps mode, two different hardware platforms for each cabinet type)
 * 30 (FHD mode)
 
+## iidx 24
+
+* frame pacing before present... D:
+* always sleeps at least 2 ms, even if behind frame time
+* only sleep if frame time is less than 14 ms, if longer, just don't frame pace
+
+```c
+int renderAndFramePace()
+{
+  DWORD frame_time_ms; // eax
+  DWORD sleep_ms; // ecx
+  IDirect3DDevice9 *v2; // eax
+  IDirect3DDevice9 *v3; // eax
+
+  frame_time_ms = timeGetTime() - previousFrameTime;
+  if ( frame_time_ms < 14 )
+  {
+    sleep_ms = 14 - frame_time_ms;
+    if ( 14 - frame_time_ms < 2 )
+      sleep_ms = 2;
+    SleepEx(sleep_ms, 0);
+  }
+  v2 = getD3D9Device();
+  if ( v2->lpVtbl->Present(v2, 0, 0, 0, 0) == -2005530520 )
+  {
+    v3 = getD3D9Device();
+    if ( v3->lpVtbl->TestCooperativeLevel(v3) == -2005530519 )
+      sub_100A46F0();
+  }
+  previousFrameTime = timeGetTime();
+  return 0;
+}
+```
+
 ## 10th style
 
 ### Windows API usage and references
