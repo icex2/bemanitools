@@ -264,11 +264,11 @@ my_OpenProcess(DWORD dwDesiredAccess, BOOL bInheritHandle, DWORD dwProcessId)
     double target_frame_rate = 59.9345;
 
     iidxhook_d3d9_frame_pace_init(main_thread_id, target_frame_rate);
-    // iidxhook_d3d9_frame_mon_init(
-    //     target_frame_rate,
-    //     0.1,
-    //     0.1,
-    //     NULL);
+    iidxhook_d3d9_frame_mon_init(
+        target_frame_rate,
+        0.1,
+        0.1,
+        NULL);
 
     iidxhook_util_proc_mcore_init(main_thread_id, IIDXHOOK_UTIL_PROC_MCORE_CPU_CORES_4);
 

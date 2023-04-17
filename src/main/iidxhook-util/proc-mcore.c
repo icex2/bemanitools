@@ -64,6 +64,18 @@ static HANDLE STDCALL my_CreateThread(
 
     handle = real_CreateThread(lpThreadAttributes, dwStackSize, lpStartAddress, lpParameter, dwCreationFlags, lpThreadId);   
 
+    // TODO for 11+, this uses beginthread and beginthreadx wrappers which pass custom structures here
+
+    // TODO for 11+, we have to trap creation of the IO threads here?
+
+    // M:proc-mon: CreateThread(module_handle 00400000, module_name Y:\iidx\11\JAA\bm2dx.exe, 
+    // current_thread_id 14936, lpThreadAttributes 00000000, dwStackSize 0, lpStartAddress 004A4E73, 
+    // lpParameter 0B472860, dwCreationFlags 0x4, lpThreadId 0B472860)
+
+    // CreateThread(module_handle 00400000, module_name Y:\iidx\11\JAA\bm2dx.exe, 
+    // current_thread_id 14936, lpThreadAttributes 00000000, dwStackSize 0, lpStartAddress 004A4E73, 
+    // lpParameter 0B4726C0, dwCreationFlags 0x4, lpThreadId 0B4726C0)
+
     // Ensure that any new threads getting created are scheduled to the right cores with normal
     // priorities
     if (handle != INVALID_HANDLE_VALUE) {
@@ -87,7 +99,7 @@ static BOOL STDCALL my_SetThreadPriority(
 
     for (int i = 0; i < sizeof(iidxhook_util_proc_mcore_thread_priority_blocklist); i++) {
         if (thread_id == iidxhook_util_proc_mcore_thread_priority_blocklist[i]) {
-            // Block changes
+            log_misc("Blocked priority %d on thread id %d", nPriority, thread_id);
             return TRUE;
         }     
     }
@@ -98,6 +110,31 @@ static BOOL STDCALL my_SetThreadPriority(
 
     // Enforce normal priority on all threads
     return real_SetThreadPriority(hThread, THREAD_PRIORITY_NORMAL);
+}
+
+static void iidxhook_util_proc_mcore_scan_and_log_threads()
+{
+    size_t count;
+    struct proc_thread_info* thread_infos;
+    char origin_module_name[MAX_PATH];
+
+    count = proc_thread_scan_threads_current_process(&thread_infos);
+
+    for (size_t i = 0; i < count; i++) {
+        if (!proc_thread_proc_get_origin_module_name(
+                thread_infos[i].proc,
+                origin_module_name,
+                sizeof(origin_module_name))) {
+            log_fatal("Getting origin module name of thread proc %p failed", thread_infos[i].proc);
+        }
+
+        log_misc("thread id %d, proc %p, priority %d, origin_module %p, origina_module_name %s",
+            thread_infos[i].id,
+            thread_infos[i].proc,
+            thread_infos[i].priority,
+            thread_infos[i].origin_module,
+            origin_module_name);
+    }
 }
 
 static size_t iidxhook_util_proc_mcore_find_ezusb_io_threads(struct proc_thread_info **io_thread_infos)
@@ -312,9 +349,19 @@ void iidxhook_util_proc_mcore_init(
             break;
     }
 
+    // TODO trap and schedule sound thread to own core on 4 core machine?
+    // core 0: main/gfx
+    // core 1: IO
+    // core 2: sound
+    // core 4: other
+    // ???
+
+    // TODO don't fix thread prios on 11+?
+
+    iidxhook_util_proc_mcore_scan_and_log_threads();
     iidxhook_util_proc_mcore_patch_main_thread(main_thread_id);
-    iidxhook_util_proc_mcore_patch_io_threads();
-    iidxhook_util_proc_mcore_patch_other_threads(main_thread_id);
+    // iidxhook_util_proc_mcore_patch_io_threads();
+    // iidxhook_util_proc_mcore_patch_other_threads(main_thread_id);
 
     hook_table_apply(
             NULL, "kernel32.dll", iidxhok_util_proc_mcore_hook_syms, lengthof(iidxhok_util_proc_mcore_hook_syms));
