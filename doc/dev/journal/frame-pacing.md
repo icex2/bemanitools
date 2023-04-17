@@ -281,7 +281,68 @@ the main thread. so if the main thread is too slow, the priority of it is booste
 
 this logic apparently switches the main thread priority around if necessary
 
-## iidx 10 JAG
+## summary frame pacing code
+
+### None at all?
+
+* 09
+* 10
+
+### V1 with while loop
+
+11-13
+
+```c
+//timeBeginPeriod(1u);
+  while ( (double)timeGetTime() - prev_frame_time_ms < 13.0 )
+  {
+    Sleep(1u);
+    //timeBeginPeriod(1u);
+  }
+```
+
+### V2 while loop with SleepEx
+
+14
+
+```c
+while ( timeGetTime() - dword_2943E10 < 0xD )
+    SleepEx(1u, 0);
+```
+
+### V3
+
+15-26
+
+```c
+frame_time_ms = timeGetTime() - previousFrameTime;
+  if ( frame_time_ms < 14 )
+  {
+    sleep_ms = 14 - frame_time_ms;
+    if ( 14 - frame_time_ms < 2 )
+      sleep_ms = 2;
+    SleepEx(sleep_ms, 0);
+  }
+```
+
+### V4
+
+27-29
+
+```c
+QueryPerformanceCounter(&current_frame_time_counter);
+  v5 = get_monitor_check_framerate_maybe();
+  target_frame_rate = get_target_frame_rate(v5);
+  time_to_sleep = 1000.0 / (double)target_frame_rate
+                - (double)(current_frame_time_counter.LowPart - (int)previous_frame_time_counter)
+                * 1000.0
+                / (double)(int)Frequency.LowPart
+                - 3.0;                          // _W_T_F_?!
+  if ( time_to_sleep > 0.0 )
+    SleepEx((int)time_to_sleep, 0);             // only MS accuracy
+```
+
+## iidx 09 JAG
 
 no frame pace code at all?
 
