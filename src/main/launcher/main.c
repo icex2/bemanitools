@@ -303,7 +303,7 @@ static void ea3_ident_override(struct ea3_ident *ea3_ident, struct property *ea3
     ea3_ident_init(ea3_ident);
 
     if (!ea3_ident_from_property(ea3_ident, ea3_config)) {
-        log_fatal("Error reading ea3 ident from properties");
+        log_fatal("Error reading ea3 ident information from ea3-config properties failed");
     }
 
     if (softid != NULL) {
