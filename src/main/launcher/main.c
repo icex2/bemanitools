@@ -191,6 +191,64 @@ static void remote_debugger_wait_and_hook()
     }    
 }
 
+static HANDLE open_logfile(const char* logfile_path)
+{
+    HANDLE handle;
+
+    if (logfile_path != NULL) {
+        handle = CreateFileA(
+            logfile_path,
+            GENERIC_WRITE,
+            FILE_SHARE_READ,
+            NULL,
+            CREATE_ALWAYS,
+            0,
+            NULL);
+
+        if (handle == INVALID_HANDLE_VALUE) {
+            log_fatal("Creating logfile %s failed", logfile_path);
+        }
+    } else {
+        handle = INVALID_HANDLE_VALUE;
+    }
+
+    return handle;
+}
+
+static void avs_start(const struct bootstrap_config *bs, HANDLE logfile_handle, struct array *before_hook_dlls, const char* avs_config_path, uint32_t avs_heap_size, uint32_t std_heap_size)
+{
+    struct property *avs_config;
+    struct property_node *avs_config_root;
+
+    log_misc("Starting AVS...");
+
+    avs_config = boot_property_load(avs_config_path);
+    avs_config_root = property_search(avs_config, 0, "/config");
+
+    log_property_tree(avs_config);
+
+    if (avs_config_root == NULL) {
+        log_fatal("%s: /config missing", avs_config_path);
+    }
+
+    bootstrap_config_update_avs(bs, avs_config_root);
+
+    log_misc("Loading before hook dlls...");
+
+    load_hook_dlls(before_hook_dlls);
+
+    log_misc("avs_context_init...");
+
+    avs_context_init(
+        avs_config_root,
+        avs_heap_size,
+        std_heap_size,
+        log_callback,
+        logfile_handle);
+
+    boot_property_free(avs_config);
+}
+
 static void bootstrap_do_default_files(struct bootstrap_config *bs)
 {
     struct bootstrap_default_file default_file;
@@ -222,7 +280,7 @@ static void bootstrap_do_default_files(struct bootstrap_config *bs)
 int main(int argc, const char **argv)
 {
     bool ok;
-    HANDLE logfile;
+    HANDLE logfile_handle;
 
     struct ea3_ident ea3;
     struct module_context module;
@@ -231,11 +289,11 @@ int main(int argc, const char **argv)
 
     struct property *bootstrap_config = NULL;
     struct property *app_config = NULL;
-    struct property *avs_config;
+    
     struct property *ea3_config;
 
     struct property_node *app_config_root;
-    struct property_node *avs_config_root;
+    
     struct property_node *ea3_config_root;
 
     // Static logging setup until we got AVS up and running
@@ -287,49 +345,9 @@ int main(int argc, const char **argv)
         remote_debugger_wait_and_hook();
     }
 
-    log_misc("Preparing AVS...");
+    logfile_handle = open_logfile(options.logfile);
 
-    /* Start up AVS */
-
-    if (options.logfile != NULL) {
-        logfile = CreateFileA(
-            options.logfile,
-            GENERIC_WRITE,
-            FILE_SHARE_READ,
-            NULL,
-            CREATE_ALWAYS,
-            0,
-            NULL);
-    } else {
-        logfile = INVALID_HANDLE_VALUE;
-    }
-
-    avs_config = boot_property_load(options.avs_config_path);
-    avs_config_root = property_search(avs_config, 0, "/config");
-
-    log_property_tree(avs_config);
-
-    // Sleep(100000000);
-
-    if (avs_config_root == NULL) {
-        log_fatal("%s: /config missing", options.avs_config_path);
-    }
-
-    bootstrap_config_update_avs(&bs, avs_config_root);
-
-    log_misc("Loading before hook dlls...");
-    load_hook_dlls(&options.before_hook_dlls);
-
-    log_misc("Initializing AVS...");
-
-    avs_context_init(
-        avs_config_root,
-        options.avs_heap_size,
-        options.std_heap_size,
-        log_callback,
-        logfile);
-
-    boot_property_free(avs_config);
+    avs_start(&bs, logfile_handle, &options.before_hook_dlls, options.avs_config_path, options.avs_heap_size, options.std_heap_size);
 
     log_info("Bootstrap complete, switching loggers");
 
@@ -477,8 +495,8 @@ int main(int argc, const char **argv)
     log_to_writer(log_writer_file, stdout);
     avs_context_fini();
 
-    if (logfile != INVALID_HANDLE_VALUE) {
-        CloseHandle(logfile);
+    if (logfile_handle != INVALID_HANDLE_VALUE) {
+        CloseHandle(logfile_handle);
     }
 
     module_context_fini(&module);
