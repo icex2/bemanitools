@@ -148,6 +148,37 @@ static void boot_property_avs_rewind(uint32_t context)
     avs_fs_lseek(desc, 0, AVS_SEEK_SET);
 }
 
+static void (struct property_node *parent_node, const char* parent_path)
+{
+    char cur_path[4096];
+    // 256 found in AVS code as size used on property_node_name
+    char cur_node_name[256];
+    char leaf_node_data[2048];
+    struct property_node* child_node;
+
+    // Carry on the full root path down the node tree
+    property_node_name(parent_node, cur_node_name, sizeof(cur_node_name));
+
+    str_cpy(cur_path, sizeof(cur_path), parent_path);
+    str_cat(cur_path, sizeof(cur_path), "/");
+    str_cat(cur_path, sizeof(cur_path), cur_node_name);
+
+    child_node = property_node_traversal(parent_node, TRAVERSE_FIRST_CHILD);
+
+    // parent node is a leaf node, print all data of it
+    if (child_node == NULL) {
+        property_node_read(parent_node, PROPERTY_TYPE_STR, leaf_node_data, sizeof(leaf_node_data));
+
+        log_misc("%s: %s", cur_path, leaf_node_data);
+    } else {
+        while (child_node) {
+            log_property_node_tree_rec(child_node, cur_path);
+
+            child_node = property_node_traversal(child_node, TRAVERSE_NEXT_SIBLING);
+        }
+    }
+}
+
 struct property *boot_property_load_avs(const char *filename)
 {
     avs_desc desc;
@@ -164,6 +195,16 @@ struct property *boot_property_load_avs(const char *filename)
     avs_fs_close(desc);
 
     return prop;
+}
+
+void boot_property_log(struct property *prop, const char *root_node)
+{
+    boot_property_log_rec(property_search(property, NULL, root_node), "");
+}
+
+void boot_property_node_log(struct property_node *prop)
+{
+    boot_property_log_rec(prop, "");
 }
 
 void boot_property_free(struct property *prop)

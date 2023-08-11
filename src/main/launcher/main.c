@@ -123,47 +123,6 @@ static void load_hook_dlls(struct array *hook_dlls)
     }
 }
 
-static void log_property_node_tree_rec(struct property_node *parent_node, const char* parent_path)
-{
-    char cur_path[4096];
-    // 256 found in AVS code as size used on property_node_name
-    char cur_node_name[256];
-    char leaf_node_data[2048];
-    struct property_node* child_node;
-
-    // Carry on the full root path down the node tree
-    property_node_name(parent_node, cur_node_name, sizeof(cur_node_name));
-
-    str_cpy(cur_path, sizeof(cur_path), parent_path);
-    str_cat(cur_path, sizeof(cur_path), "/");
-    str_cat(cur_path, sizeof(cur_path), cur_node_name);
-
-    child_node = property_node_traversal(parent_node, TRAVERSE_FIRST_CHILD);
-
-    // parent node is a leaf node, print all data of it
-    if (child_node == NULL) {
-        property_node_read(parent_node, PROPERTY_TYPE_STR, leaf_node_data, sizeof(leaf_node_data));
-
-        log_misc("%s: %s", cur_path, leaf_node_data);
-    } else {
-        while (child_node) {
-            log_property_node_tree_rec(child_node, cur_path);
-
-            child_node = property_node_traversal(child_node, TRAVERSE_NEXT_SIBLING);
-        }
-    }
-}
-
-static void log_property_tree(struct property *property)
-{
-    log_property_node_tree_rec(property_search(property, NULL, "/"), "");
-}
-
-static void log_property_node_tree(struct property_node *parent_node)
-{
-    log_property_node_tree_rec(parent_node, "");
-}
-
 /* If enabled, wait for a remote debugger to attach. Spawning launcher
        with a debugger crashes it for some reason (e.g. on jubeat08). However,
        starting the launcher separately and attaching a remote debugger works */
@@ -224,8 +183,6 @@ static void avs_start(const struct bootstrap_config *bs, HANDLE logfile_handle, 
 
     avs_config = boot_property_load(avs_config_path);
     avs_config_root = property_search(avs_config, 0, "/config");
-
-    log_property_tree(avs_config);
 
     if (avs_config_root == NULL) {
         log_fatal("%s: /config missing", avs_config_path);
