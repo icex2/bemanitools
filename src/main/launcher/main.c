@@ -249,7 +249,7 @@ static void avs_start(const struct bootstrap_config *bs, HANDLE logfile_handle, 
     boot_property_free(avs_config);
 }
 
-static void bootstrap_do_default_files(struct bootstrap_config *bs)
+static void bootstrap_default_files_setup(struct bootstrap_config *bs)
 {
     struct bootstrap_default_file default_file;
 
@@ -379,7 +379,7 @@ int main(int argc, const char **argv)
 
     /* Do late bootstrap initialisation */
 
-    bootstrap_do_default_files(&bs);
+    bootstrap_default_files_setup(&bs);
 
     /* Load game DLL */
 
