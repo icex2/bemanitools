@@ -164,6 +164,33 @@ static void log_property_node_tree(struct property_node *parent_node)
     log_property_node_tree_rec(parent_node, "");
 }
 
+/* If enabled, wait for a remote debugger to attach. Spawning launcher
+       with a debugger crashes it for some reason (e.g. on jubeat08). However,
+       starting the launcher separately and attaching a remote debugger works */
+static void remote_debugger_wait_and_hook()
+{
+    BOOL res;
+
+    log_info("Waiting until debugger attaches to remote process...");
+
+    while (true) {
+        res = FALSE;
+
+        if (!CheckRemoteDebuggerPresent(GetCurrentProcess(), &res)) {
+            log_fatal(
+                "CheckRemoteDebuggerPresent failed: %08x",
+                (unsigned int) GetLastError());
+        }
+
+        if (res) {
+            log_info("Debugger attached, resuming");
+            break;
+        }
+
+        Sleep(1000);
+    }    
+}
+
 static void bootstrap_do_default_files(struct bootstrap_config *bs)
 {
     struct bootstrap_default_file default_file;
@@ -256,28 +283,8 @@ int main(int argc, const char **argv)
         return EXIT_FAILURE;
     }
 
-    /* If enabled, wait for a remote debugger to attach. Spawning launcher
-       with a debugger crashes it for some reason (e.g. on jubeat08). However,
-       starting the launcher separately and attaching a remote debugger works */
-
     if (options.remote_debugger) {
-        log_info("Waiting until debugger attaches to remote process...");
-
-        while (true) {
-            BOOL res = FALSE;
-            if (!CheckRemoteDebuggerPresent(GetCurrentProcess(), &res)) {
-                log_fatal(
-                    "CheckRemoteDebuggerPresent failed: %08x",
-                    (unsigned int) GetLastError());
-            }
-
-            if (res) {
-                log_info("Debugger attached, resuming");
-                break;
-            }
-
-            Sleep(1000);
-        }
+        remote_debugger_wait_and_hook();
     }
 
     log_misc("Preparing AVS...");
