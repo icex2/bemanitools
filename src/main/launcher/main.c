@@ -263,14 +263,8 @@ static void bootstrap_default_files_setup(struct bootstrap_config *bs)
         
         log_misc("%s: copying from %s...", default_file.dest, default_file.src);
 
-        if (avs_fs_lstat(default_file.src, &st)) {
+        if (!avs_fs_lstat(default_file.src, &st)) {
             log_fatal("Default file source %s does not exist or is not accessible", default_file.src);
-            continue;
-        }
-
-        if (avs_fs_lstat(default_file.dest, &st)) {
-            log_fatal("Default file destination %s does not exist or is not accessible", default_file.dest);
-            continue;
         }
         
         if (avs_fs_copy(default_file.src, default_file.dest) < 0) {
