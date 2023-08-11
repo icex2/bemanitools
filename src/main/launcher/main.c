@@ -247,6 +247,11 @@ static void avs_start(const struct bootstrap_config *bs, HANDLE logfile_handle, 
         logfile_handle);
 
     boot_property_free(avs_config);
+
+    log_info("AVS start complete, switching to AVS loggers");
+
+    log_to_external(
+        log_body_misc, log_body_info, log_body_warning, log_body_fatal);
 }
 
 static void bootstrap_default_files_setup(struct bootstrap_config *bs)
@@ -393,11 +398,6 @@ int main(int argc, const char **argv)
     logfile_handle = open_logfile(options.logfile);
 
     avs_start(&bs, logfile_handle, &options.before_hook_dlls, options.avs_config_path, options.avs_heap_size, options.std_heap_size);
-
-    log_info("Bootstrap complete, switching loggers");
-
-    log_to_external(
-        log_body_misc, log_body_info, log_body_warning, log_body_fatal);
 
     /* Do late bootstrap initialisation */
 
