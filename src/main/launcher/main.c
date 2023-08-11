@@ -277,6 +277,28 @@ static void bootstrap_default_files_setup(struct bootstrap_config *bs)
     }
 }
 
+static void ea3_ident_inject_into_ea3_config(const char *ea3_ident_path, struct property_node *ea3_config_root)
+{
+    if (path_exists(ea3_ident_path)) {
+        log_info("%s: loading override", ea3_ident_path);
+
+        struct property *ea3_ident = boot_property_load(ea3_ident_path);
+        struct property_node *node =
+            property_search(ea3_ident, NULL, "/ea3_conf");
+
+        if (node == NULL) {
+            log_fatal("%s: /ea3_conf missing", ea3_ident_path);
+        }
+
+        for (node = property_node_traversal(node, TRAVERSE_FIRST_CHILD); node;
+             node = property_node_traversal(node, TRAVERSE_NEXT_SIBLING)) {
+            property_node_clone(NULL, ea3_config_root, node, TRUE);
+        }
+
+        boot_property_free(ea3_ident);
+    }
+}
+
 static void ea3_ident_setup(struct ea3_ident *ea3_ident, struct property *ea3_config, const char* softid, const char* pcbid)
 {
     ea3_ident_init(ea3_ident);
@@ -409,22 +431,7 @@ int main(int argc, const char **argv)
         log_fatal("%s: /ea3 missing", options.ea3_config_path);
     }
 
-    if (path_exists(options.ea3_ident_path)) {
-        log_info("%s: loading override", options.ea3_ident_path);
-        struct property *ea3_ident = boot_property_load(options.ea3_ident_path);
-        struct property_node *node =
-            property_search(ea3_ident, NULL, "/ea3_conf");
-        if (node == NULL) {
-            log_fatal("%s: /ea3_conf missing", options.ea3_ident_path);
-        }
-
-        for (node = property_node_traversal(node, TRAVERSE_FIRST_CHILD); node;
-             node = property_node_traversal(node, TRAVERSE_NEXT_SIBLING)) {
-            property_node_clone(NULL, ea3_config_root, node, TRUE);
-        }
-
-        boot_property_free(ea3_ident);
-    }
+    ea3_ident_inject_into_ea3_config(options.ea3_config_path, ea3_config_root);
 
     ea3_ident_setup(&ea3_ident, ea3_config, options.softid, options.pcbid);
 
