@@ -277,12 +277,34 @@ static void bootstrap_do_default_files(struct bootstrap_config *bs)
     }
 }
 
+static void ea3_ident_setup(struct ea3_ident *ea3_ident, struct property *ea3_config, const char* softid, const char* pcbid)
+{
+    ea3_ident_init(ea3_ident);
+
+    if (!ea3_ident_from_property(ea3_ident, ea3_config)) {
+        log_fatal("Error reading ea3 ident from properties");
+    }
+
+    if (softid != NULL) {
+        str_cpy(ea3_ident->softid, lengthof(ea3_ident->softid), softid);
+    }
+
+    if (pcbid != NULL) {
+        str_cpy(ea3_ident->pcbid, lengthof(ea3_ident->pcbid), pcbid);
+    }
+
+    if (!ea3_ident->hardid[0]) {
+        ea3_ident_hardid_from_ethernet(ea3_ident);
+    }
+
+    ea3_ident_to_property(ea3_ident, ea3_config);
+}
+
 int main(int argc, const char **argv)
 {
     bool ok;
     HANDLE logfile_handle;
 
-    struct ea3_ident ea3;
     struct module_context module;
     struct options options;
     struct bootstrap_config bs;
@@ -290,6 +312,7 @@ int main(int argc, const char **argv)
     struct property *bootstrap_config = NULL;
     struct property *app_config = NULL;
     
+    struct ea3_ident ea3_ident;
     struct property *ea3_config;
 
     struct property_node *app_config_root;
@@ -357,7 +380,6 @@ int main(int argc, const char **argv)
     /* Do late bootstrap initialisation */
 
     bootstrap_do_default_files(&bs);
-    
 
     /* Load game DLL */
 
@@ -404,24 +426,7 @@ int main(int argc, const char **argv)
         boot_property_free(ea3_ident);
     }
 
-    ea3_ident_init(&ea3);
-
-    if (!ea3_ident_from_property(&ea3, ea3_config)) {
-        log_fatal(
-            "%s: Error reading IDs from config file", options.ea3_config_path);
-    }
-
-    if (options.softid != NULL) {
-        str_cpy(ea3.softid, lengthof(ea3.softid), options.softid);
-    }
-
-    if (options.pcbid != NULL) {
-        str_cpy(ea3.pcbid, lengthof(ea3.pcbid), options.pcbid);
-    }
-
-    if (!ea3.hardid[0]) {
-        ea3_ident_hardid_from_ethernet(&ea3);
-    }
+    ea3_ident_setup(&ea3_ident, ea3_config, options.softid, options.pcbid);
 
     /* Invoke dll_entry_init */
 
@@ -447,7 +452,7 @@ int main(int argc, const char **argv)
         DebugBreak();
     }
 
-    ok = ea3_ident_invoke_module_init(&ea3, &module, app_config_root);
+    ok = ea3_ident_invoke_module_init(&ea3_ident, &module, app_config_root);
 
     if (!ok) {
         log_fatal("%s: dll_module_init() returned failure", options.module);
@@ -459,8 +464,6 @@ int main(int argc, const char **argv)
     if (bootstrap_config) {
         boot_property_free(bootstrap_config);
     }
-
-    ea3_ident_to_property(&ea3, ea3_config);
 
     if (options.override_urlslash_enabled) {
         log_info(
