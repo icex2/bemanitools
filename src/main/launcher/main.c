@@ -298,7 +298,7 @@ static void ea3_ident_inject_into_ea3_config(const char *ea3_ident_path, struct 
     }
 }
 
-static void ea3_ident_setup(struct ea3_ident *ea3_ident, struct property *ea3_config, const char* softid, const char* pcbid)
+static void ea3_ident_override(struct ea3_ident *ea3_ident, struct property *ea3_config, const char* softid, const char* pcbid)
 {
     ea3_ident_init(ea3_ident);
 
@@ -427,7 +427,7 @@ int main(int argc, const char **argv)
 
     ea3_ident_inject_into_ea3_config(options.ea3_config_path, ea3_config_root);
 
-    ea3_ident_setup(&ea3_ident, ea3_config, options.softid, options.pcbid);
+    ea3_ident_override(&ea3_ident, ea3_config, options.softid, options.pcbid);
 
     /* Invoke dll_entry_init */
 
