@@ -278,6 +278,24 @@ static void ea3_ident_override(struct ea3_ident *ea3_ident, struct property *ea3
     ea3_ident_to_property(ea3_ident, ea3_config);
 }
 
+// High level steps notes
+// - enable log output to console
+// - read command line options
+// - remote debugger (as early as possible)
+// - before hook dlls
+// - bootstrap read + selector configuration
+// - avs start
+// - bootstrap default file stuff (requires avs)
+// - load game dll
+// - load hook dlls
+// - stubs_init
+// - ea3 config stuff (can't this be even before loading the game dll?)
+// - app config stuff (can't this be even before loading the game dll?)
+// - debug break
+// - module init
+// - run application
+// - shutdown
+
 int main(int argc, const char **argv)
 {
     bool ok;
@@ -285,16 +303,16 @@ int main(int argc, const char **argv)
 
     struct module_context module;
     struct options options;
-    struct bootstrap_config bs;
-
-    struct property *bootstrap_config = NULL;
-    struct property *app_config = NULL;
     
-    struct ea3_ident ea3_ident;
-    struct property *ea3_config;
+    struct bootstrap_config bs;
+    struct property *bootstrap_config = NULL;
 
+    struct property *app_config = NULL;
     struct property_node *app_config_root;
     
+    struct ea3_ident ea3_ident;
+
+    struct property *ea3_config;
     struct property_node *ea3_config_root;
 
     // Static logging setup until we got AVS up and running
