@@ -45,6 +45,8 @@ Existing supported games must boot and run correctly on current hardware — reg
 
 ## Context
 
+**Priority: AIDE-first.** The AI-assisted development infrastructure is the top priority. It serves a dual purpose: (1) enabling agentic bug fixing on this codebase, and (2) personal research into creating reusable agentic tooling and workflows for reverse engineering projects. The bug fixes validate the AIDE infrastructure and are secondary work.
+
 The project has 30+ open GitHub issues spanning bugs, feature requests, support questions, and a major BT6 refactoring chain. No issues have labels or priority markers. The bug backlog clusters around:
 
 1. **Pop'n Music regression** — 3 issues (#345, #341, #338) all reporting boot failures after v5.43. Likely a single root cause introduced in v5.44.
