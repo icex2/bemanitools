@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v5.43
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-01T13:24:52.419Z"
+last_updated: "2026-03-01T13:26:12.010Z"
 progress:
   total_phases: 2
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 7
-  completed_plans: 6
+  completed_plans: 7
 ---
 
 # Project State
@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-28)
 
 **Core value:** Existing supported games must boot and run correctly on current hardware — regressions are the highest priority.
-**Current focus:** Phase 2 — Protocol Reference and Emulator Tests
+**Current focus:** Phase 3 — Ghidra Integration (decompilation tooling)
 
 ## Current Position
 
-Phase: 2 of 6 (Protocol Reference and Emulator Tests)
-Plan: 3 of TBD in current phase (02-01 ACIO protocol reference+tests, 02-02 test stub libraries)
-Status: Active — ACIO framing doc and pipe tests complete, stubs complete, ready for ICCA node tests
-Last activity: 2026-03-01 — Phase 2 plan 01 (ACIO protocol reference and pipe tests) completed
+Phase: 2 of 6 (Protocol Reference and Emulator Tests) — COMPLETE
+Plan: 5 of 5 complete (02-05 ICCA node tests + bug research artifacts)
+Status: Phase 2 complete — all protocol docs, emulator tests, and bug research artifacts done
+Last activity: 2026-03-01 — Phase 2 plan 05 (ICCA tests and bug research) completed
 
-Progress: [███░░░░░░░] 29%
+Progress: [█████░░░░░] 50%
 
 ## Performance Metrics
 
@@ -51,6 +51,7 @@ Progress: [███░░░░░░░] 29%
 | Phase 02 P02 | 4 | 2 tasks | 10 files |
 | Phase 02-protocol-reference-and-emulator-tests P03 | 11 | 2 tasks | 3 files |
 | Phase 02 P04 | 12 | 2 tasks | 5 files |
+| Phase 02 P05 | 13 | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -75,6 +76,7 @@ Recent decisions affecting current work:
 - [Phase 02-03]: hooklib required in test link deps for rs232_hook_add_fd (referenced in bio2emu static lib even though bio2emu_port_init is never called from tests)
 - [Phase 02]: FPGA node process_cmd functions tested directly (exported); msg layer tested via hook struct — clean boundary without iohook
 - [Phase 02]: ezusb-iidx-16seg-emu and security required in test link deps for node_16seg and security_plug resolved symbols
+- [Phase 02]: Bypass ac_io_emu_init: zero-initialize struct ac_io_emu + ac_io_in_init for ICCA dispatch-only tests (no iohook dependency)
 
 ### Pending Todos
 
@@ -90,5 +92,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-01
-Stopped at: Completed 02-01-PLAN.md — ACIO protocol reference and pipe framing tests
-Resume file: .planning/phases/02-protocol-reference-and-emulator-tests/02-01-SUMMARY.md
+Stopped at: Completed 02-05-PLAN.md — ICCA node tests and bug research artifacts for #345, #344, #351
+Resume file: .planning/phases/02-protocol-reference-and-emulator-tests/02-05-SUMMARY.md
