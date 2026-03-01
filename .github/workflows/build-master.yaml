@@ -21,6 +21,13 @@ jobs:
         run: |
           make build-docker
 
+      - name: "Run tests (Wine)"
+        run: |
+          docker run --rm \
+            --volume $(pwd):/bemanitools \
+            bemanitools-build:latest \
+            /bin/sh -c "cd /bemanitools && ./run-tests-wine.sh"
+
       # Do some unpacking of the dist zip. Artifact upload repackages stuff
       - name: "Prepare artifact package"
         run: |
