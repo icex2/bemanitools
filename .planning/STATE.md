@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v5.43
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-01T12:47:46.305Z"
+last_updated: "2026-03-01T13:07:45.000Z"
 progress:
   total_phases: 2
   completed_phases: 1
   total_plans: 7
-  completed_plans: 3
+  completed_plans: 4
 ---
 
 # Project State
@@ -23,11 +23,11 @@ See: .planning/PROJECT.md (updated 2026-02-28)
 ## Current Position
 
 Phase: 2 of 6 (Protocol Reference and Emulator Tests)
-Plan: 2 of TBD in current phase (02-01 ACIO protocol reference, 02-02 test stub libraries)
-Status: Active — stub libraries complete, ready for emulator test executables
-Last activity: 2026-03-01 — Phase 2 plan 02 execution completed
+Plan: 3 of TBD in current phase (02-01 ACIO protocol reference+tests, 02-02 test stub libraries)
+Status: Active — ACIO framing doc and pipe tests complete, stubs complete, ready for ICCA node tests
+Last activity: 2026-03-01 — Phase 2 plan 01 (ACIO protocol reference and pipe tests) completed
 
-Progress: [███░░░░░░░] 25%
+Progress: [███░░░░░░░] 29%
 
 ## Performance Metrics
 
@@ -67,6 +67,8 @@ Recent decisions affecting current work:
 - [01-02]: Tier 2 includes modules with tests (d3d9hook, iidxhook8) alongside untested emulation — both are hardware-free and Wine-testable
 - [Phase 02]: Test stubs placed in src/test/stubs/ as static libs; included via stubs/X/X-stub.h path resolved by -I src/test
 - [Phase 02]: time-stub defaults to 1s elapsed to make emulator drain loops immediately available without timing configuration
+- [02-01]: Link pipe-level tests against hook lib (iobuf_move) + eamio-stub + time-stub; tests.zip manifest is hardcoded and must be updated manually for each new test binary
+- [02-01]: Protocol doc established before tests — doc is source of truth; discrepancies between doc and impl surface bugs in either layer
 
 ### Pending Todos
 
@@ -82,5 +84,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-01
-Stopped at: Completed 02-02-PLAN.md — test stub libraries for iidxio, eamio, time
-Resume file: .planning/phases/02-protocol-reference-and-emulator-tests/02-02-SUMMARY.md
+Stopped at: Completed 02-01-PLAN.md — ACIO protocol reference and pipe framing tests
+Resume file: .planning/phases/02-protocol-reference-and-emulator-tests/02-01-SUMMARY.md

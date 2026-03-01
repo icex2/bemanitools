@@ -101,7 +101,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Agent Foundation | 2/2 | Complete | 2026-03-01 |
-| 2. Protocol Reference and Emulator Tests | 1/5 | In Progress|  |
+| 2. Protocol Reference and Emulator Tests | 2/5 | In Progress|  |
 | 3. Ghidra RE Integration | 0/TBD | Not started | - |
 | 4. Regressions | 0/TBD | Not started | - |
 | 5. Bug Fixes and Contributions | 0/TBD | Not started | - |
