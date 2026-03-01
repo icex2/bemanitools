@@ -13,6 +13,7 @@ Requirements for this milestone. AIDE infrastructure is the top priority — it 
 - [ ] **AIDE-02**: Testing infrastructure established where feasible (unit tests for pure logic, integration stubs)
 - [ ] **AIDE-03**: Reference material for hooked targets available (decompiled headers, API contracts, protocol docs)
 - [ ] **AIDE-04**: Development workflow documented for agentic use (how to build, test, verify changes)
+- [ ] **AIDE-05**: Decompilation tooling integrated for agent access to original binaries (e.g., Ghidra MCP or similar) — agents can query decompiled functions, understand hook targets, and cross-reference with hook implementations
 
 ### Regressions
 
@@ -66,6 +67,7 @@ Requirements for this milestone. AIDE infrastructure is the top priority — it 
 | AIDE-02 | — | Pending |
 | AIDE-03 | — | Pending |
 | AIDE-04 | — | Pending |
+| AIDE-05 | — | Pending |
 | REGR-01 | — | Pending |
 | REGR-02 | — | Pending |
 | REGR-03 | — | Pending |
@@ -79,9 +81,9 @@ Requirements for this milestone. AIDE infrastructure is the top priority — it 
 | TRIA-02 | — | Pending |
 
 **Coverage:**
-- v1 requirements: 15 total
+- v1 requirements: 16 total
 - Mapped to phases: 0
-- Unmapped: 15 ⚠️
+- Unmapped: 16 ⚠️
 
 ---
 *Requirements defined: 2026-03-01*
