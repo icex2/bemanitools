@@ -16,7 +16,7 @@ set -uo pipefail
 # ---- BUILD ------------------------------------------------------------------
 
 echo "==> Building..."
-if make build; then
+if make all; then
     echo "[BUILD] PASS"
 else
     echo "[BUILD] FAIL"
@@ -26,7 +26,10 @@ fi
 # ---- FORMAT -----------------------------------------------------------------
 
 echo "==> Checking code format..."
-make code-format
+if ! make code-format; then
+    echo "[FORMAT] FAIL"
+    exit 1
+fi
 if git diff --exit-code -- src/main src/test; then
     echo "[FORMAT] PASS"
 else
