@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v5.43
 milestone_name: milestone
-status: active
-last_updated: "2026-03-01T23:00:00.000Z"
+status: unknown
+last_updated: "2026-03-01T12:47:46.305Z"
 progress:
-  total_phases: 1
+  total_phases: 2
   completed_phases: 1
-  total_plans: 2
-  completed_plans: 2
+  total_plans: 7
+  completed_plans: 3
 ---
 
 # Project State
@@ -23,11 +23,11 @@ See: .planning/PROJECT.md (updated 2026-02-28)
 ## Current Position
 
 Phase: 2 of 6 (Protocol Reference and Emulator Tests)
-Plan: 0 of TBD in current phase
-Status: Phase 2 context gathered, ready for planning
-Last activity: 2026-03-01 — Phase 2 context discussion completed
+Plan: 2 of TBD in current phase (02-01 ACIO protocol reference, 02-02 test stub libraries)
+Status: Active — stub libraries complete, ready for emulator test executables
+Last activity: 2026-03-01 — Phase 2 plan 02 execution completed
 
-Progress: [██░░░░░░░░] 17%
+Progress: [███░░░░░░░] 25%
 
 ## Performance Metrics
 
@@ -48,6 +48,7 @@ Progress: [██░░░░░░░░] 17%
 
 *Updated after each plan completion*
 | Phase 01 P01 | 3 | 2 tasks | 3 files |
+| Phase 02 P02 | 4 | 2 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -64,6 +65,8 @@ Recent decisions affecting current work:
 - [01-02]: agent-reference.md links out to existing docs rather than duplicating — keeps it concise and maintainable
 - [01-02]: CLAUDE.md is self-contained (no dependency on personal ~/.claude/rules/) — works for any contributor
 - [01-02]: Tier 2 includes modules with tests (d3d9hook, iidxhook8) alongside untested emulation — both are hardware-free and Wine-testable
+- [Phase 02]: Test stubs placed in src/test/stubs/ as static libs; included via stubs/X/X-stub.h path resolved by -I src/test
+- [Phase 02]: time-stub defaults to 1s elapsed to make emulator drain loops immediately available without timing configuration
 
 ### Pending Todos
 
@@ -79,5 +82,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-01
-Stopped at: Phase 2 context gathered
-Resume file: .planning/phases/02-protocol-reference-and-emulator-tests/02-CONTEXT.md
+Stopped at: Completed 02-02-PLAN.md — test stub libraries for iidxio, eamio, time
+Resume file: .planning/phases/02-protocol-reference-and-emulator-tests/02-02-SUMMARY.md
