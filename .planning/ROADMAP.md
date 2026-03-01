@@ -44,7 +44,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. State machine unit tests exist for bio2emu, acioemu, and ezusb-iidx-emu and pass via `aide-verify.sh`
   3. Per-bug research artifacts exist for the three active regressions (#345, #344, #351) so an agent starting work on any of them does not re-derive context from scratch
   4. Emulator tests verify against declared expected behavior, not just current emulator output
-**Plans**: TBD
+**Plans**: 5 plans
+- [ ] 02-01-PLAN.md — ACIO protocol reference doc and pipe framing tests
+- [ ] 02-02-PLAN.md — Test stub libraries (iidxio, eamio, time)
+- [ ] 02-03-PLAN.md — BIO2 protocol reference doc and emulator tests
+- [ ] 02-04-PLAN.md — ezusb-iidx protocol reference doc and emulator tests
+- [ ] 02-05-PLAN.md — ACIO ICCA node tests and bug research artifacts
 
 ### Phase 3: Ghidra RE Integration
 **Goal**: Agents can query decompiled game binary internals interactively via MCP without manual export steps
@@ -96,7 +101,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Agent Foundation | 2/2 | Complete | 2026-03-01 |
-| 2. Protocol Reference and Emulator Tests | 0/TBD | Not started | - |
+| 2. Protocol Reference and Emulator Tests | 0/5 | Not started | - |
 | 3. Ghidra RE Integration | 0/TBD | Not started | - |
 | 4. Regressions | 0/TBD | Not started | - |
 | 5. Bug Fixes and Contributions | 0/TBD | Not started | - |
