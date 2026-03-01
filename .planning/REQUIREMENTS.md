@@ -9,10 +9,10 @@ Requirements for this milestone. AIDE infrastructure is the top priority — it 
 
 ### AI-Assisted Development
 
-- [ ] **AIDE-01**: Build system works reliably for agentic iteration (build, verify, repeat)
-- [ ] **AIDE-02**: Testing infrastructure established where feasible (unit tests for pure logic, integration stubs)
+- [x] **AIDE-01**: Build system works reliably for agentic iteration (build, verify, repeat)
+- [x] **AIDE-02**: Testing infrastructure established where feasible (unit tests for pure logic, integration stubs)
 - [ ] **AIDE-03**: Reference material for hooked targets available (decompiled headers, API contracts, protocol docs)
-- [ ] **AIDE-04**: Development workflow documented for agentic use (how to build, test, verify changes)
+- [x] **AIDE-04**: Development workflow documented for agentic use (how to build, test, verify changes)
 - [ ] **AIDE-05**: Decompilation tooling integrated for agent access to original binaries (e.g., Ghidra MCP or similar) — agents can query decompiled functions, understand hook targets, and cross-reference with hook implementations
 
 ### Regressions
@@ -63,8 +63,8 @@ Requirements for this milestone. AIDE infrastructure is the top priority — it 
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AIDE-01 | Phase 1 | Pending |
-| AIDE-02 | Phase 1 | Pending |
+| AIDE-01 | Phase 1 | Complete |
+| AIDE-02 | Phase 1 | Complete |
 | AIDE-04 | Phase 1 | Pending |
 | AIDE-03 | Phase 2 | Pending |
 | AIDE-05 | Phase 3 | Pending |

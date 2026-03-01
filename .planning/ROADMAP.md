@@ -12,7 +12,7 @@ This maintenance cycle builds AI agent infrastructure first, then uses that infr
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Agent Foundation** - Establish the agentic verification loop (build, test, interpret, repeat)
+- [x] **Phase 1: Agent Foundation** - Establish the agentic verification loop (build, test, interpret, repeat)
 - [ ] **Phase 2: Protocol Reference and Emulator Tests** - Give agents ground truth for hardware protocol correctness
 - [ ] **Phase 3: Ghidra RE Integration** - Enable interactive game binary analysis via MCP
 - [ ] **Phase 4: Regressions** - Fix the highest-priority game boot regressions
@@ -32,8 +32,8 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. CLAUDE.md constrains agents to BT5 scope, Win32 calling conventions, and correct test patterns before any code generation
   5. Existing unit tests can be run under Wine and all pass
 **Plans**: 2 plans
-- [ ] 01-01-PLAN.md — Verification script (aide-verify.sh) and CI Wine integration
-- [ ] 01-02-PLAN.md — Agent reference doc and project CLAUDE.md
+- [x] 01-01-PLAN.md — Verification script (aide-verify.sh) and CI Wine integration
+- [x] 01-02-PLAN.md — Agent reference doc and project CLAUDE.md
 
 ### Phase 2: Protocol Reference and Emulator Tests
 **Goal**: Agents have ground-truth protocol reference material and automated correctness signals for the hardware emulator tier
@@ -95,7 +95,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Agent Foundation | 0/2 | Planned | - |
+| 1. Agent Foundation | 2/2 | Complete | 2026-03-01 |
 | 2. Protocol Reference and Emulator Tests | 0/TBD | Not started | - |
 | 3. Ghidra RE Integration | 0/TBD | Not started | - |
 | 4. Regressions | 0/TBD | Not started | - |
