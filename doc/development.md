@@ -21,19 +21,81 @@ The following tooling is required in order to build this project.
 
 ### Tooling
 
-#### Linux / MacOSX
+#### Linux
 
-- git
-- make
-- mingw-w64
-- clang-format
-- wine (optional, for running tests or some quick testing without requiring a VM)
+The cross-compilation toolchain targets Windows from Linux. You need MinGW-w64 (provides both 32-bit
+and 64-bit cross-compilers), standard build tools, and optionally Wine for running the test suite
+locally.
 
-On MacOSX, you can use homebrew or macports to install these packages.
+**Required for building:**
+
+| Tool | Purpose |
+|------|---------|
+| `make` | Build system |
+| `git` | Version control, also used by format checks |
+| `i686-w64-mingw32-gcc` | 32-bit Windows cross-compiler (from mingw-w64) |
+| `x86_64-w64-mingw32-gcc` | 64-bit Windows cross-compiler (from mingw-w64) |
+| `zip` | Packaging build output |
+
+**Required for code formatting:**
+
+| Tool | Purpose |
+|------|---------|
+| `clang-format` | Automatic code style enforcement |
+
+**Required for running tests (optional):**
+
+| Tool | Purpose |
+|------|---------|
+| `wine` | Executes the Windows test binaries on Linux |
+| `unzip` | Unpacks the test archive produced by the build |
+
+On 64-bit systems you also need 32-bit Wine support since the test executables are 32-bit. This
+requires enabling the i386 architecture on Debian/Ubuntu.
+
+##### Debian / Ubuntu
+
+```bash
+# Build essentials
+sudo apt-get install make git mingw-w64 zip clang-format
+
+# Test execution (optional)
+sudo dpkg --add-architecture i386
+sudo apt-get update
+sudo apt-get install wine wine32 unzip
+```
+
+##### Fedora
+
+```bash
+# Build essentials
+sudo dnf install make git mingw64-gcc mingw32-gcc zip clang-tools-extra
+
+# Test execution (optional)
+sudo dnf install wine unzip
+```
+
+The `scripts/aide-verify.sh` script checks for all required tools and reports what is missing before
+running.
+
+#### macOS
+
+Install via Homebrew:
+
+```bash
+brew install mingw-w64 clang-format zip
+brew install --cask wine-stable  # optional, for tests
+```
 
 #### Windows
 
 TODO
+
+#### Docker (alternative)
+
+If you prefer not to install tooling locally, the Docker-based build handles everything — see
+[Building with docker](#building-with-docker). The build container is based on Debian and includes
+all required packages.
 
 ### IDE
 
