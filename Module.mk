@@ -212,6 +212,9 @@ include src/test/iidxhook8/Module.mk
 include src/test/security/Module.mk
 include src/test/test/Module.mk
 include src/test/util/Module.mk
+include src/test/stubs/iidxio/Module.mk
+include src/test/stubs/eamio/Module.mk
+include src/test/stubs/time/Module.mk
 
 #
 # Distribution build rules
