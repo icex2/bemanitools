@@ -13,6 +13,25 @@
 
 set -uo pipefail
 
+# ---- TOOLING CHECK ----------------------------------------------------------
+
+missing=()
+for cmd in make i686-w64-mingw32-gcc x86_64-w64-mingw32-gcc zip clang-format git wine unzip; do
+    command -v "$cmd" >/dev/null 2>&1 || missing+=("$cmd")
+done
+
+if [ ${#missing[@]} -gt 0 ]; then
+    echo "[PREREQ] FAIL"
+    echo "Missing required commands: ${missing[*]}"
+    echo ""
+    echo "Packages to install (Debian/Ubuntu):"
+    echo "  mingw-w64          — i686-w64-mingw32-gcc, x86_64-w64-mingw32-gcc"
+    echo "  clang-format       — clang-format"
+    echo "  wine wine32        — wine (also enable i386: dpkg --add-architecture i386)"
+    echo "  zip unzip          — zip, unzip"
+    exit 1
+fi
+
 # ---- BUILD ------------------------------------------------------------------
 
 echo "==> Building..."
