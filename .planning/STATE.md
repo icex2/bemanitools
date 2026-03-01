@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v5.43
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-01T13:23:35.289Z"
+last_updated: "2026-03-01T13:24:52.419Z"
 progress:
   total_phases: 2
   completed_phases: 1
   total_plans: 7
-  completed_plans: 5
+  completed_plans: 6
 ---
 
 # Project State
@@ -50,6 +50,7 @@ Progress: [███░░░░░░░] 29%
 | Phase 01 P01 | 3 | 2 tasks | 3 files |
 | Phase 02 P02 | 4 | 2 tasks | 10 files |
 | Phase 02-protocol-reference-and-emulator-tests P03 | 11 | 2 tasks | 3 files |
+| Phase 02 P04 | 12 | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -72,6 +73,8 @@ Recent decisions affecting current work:
 - [02-01]: Protocol doc established before tests — doc is source of truth; discrepancies between doc and impl surface bugs in either layer
 - [Phase 02-03]: Bypass bio2_emu_bi2a_init by zero-initializing port struct and calling ac_io_in/out_init directly — tests dispatch without iohook
 - [Phase 02-03]: hooklib required in test link deps for rs232_hook_add_fd (referenced in bio2emu static lib even though bio2emu_port_init is never called from tests)
+- [Phase 02]: FPGA node process_cmd functions tested directly (exported); msg layer tested via hook struct — clean boundary without iohook
+- [Phase 02]: ezusb-iidx-16seg-emu and security required in test link deps for node_16seg and security_plug resolved symbols
 
 ### Pending Todos
 
