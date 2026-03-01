@@ -33,8 +33,8 @@ locally.
 |------|---------|
 | `make` | Build system |
 | `git` | Version control, also used by format checks |
-| `i686-w64-mingw32-gcc` | 32-bit Windows cross-compiler (from mingw-w64) |
-| `x86_64-w64-mingw32-gcc` | 64-bit Windows cross-compiler (from mingw-w64) |
+| `i686-w64-mingw32-gcc`, `g++` | 32-bit Windows cross-compiler and linker (from mingw-w64) |
+| `x86_64-w64-mingw32-gcc`, `g++` | 64-bit Windows cross-compiler and linker (from mingw-w64) |
 | `zip` | Packaging build output |
 
 **Required for code formatting:**
@@ -69,7 +69,7 @@ sudo apt-get install wine wine32 unzip
 
 ```bash
 # Build essentials
-sudo dnf install make git mingw64-gcc mingw32-gcc zip clang-tools-extra
+sudo dnf install make git mingw64-gcc mingw64-gcc-c++ mingw32-gcc mingw32-gcc-c++ zip clang-tools-extra
 
 # Test execution (optional)
 sudo dnf install wine unzip

@@ -16,7 +16,7 @@ set -uo pipefail
 # ---- TOOLING CHECK ----------------------------------------------------------
 
 missing=()
-for cmd in make i686-w64-mingw32-gcc x86_64-w64-mingw32-gcc zip clang-format git wine unzip; do
+for cmd in make i686-w64-mingw32-gcc i686-w64-mingw32-g++ x86_64-w64-mingw32-gcc x86_64-w64-mingw32-g++ zip clang-format git wine unzip; do
     command -v "$cmd" >/dev/null 2>&1 || missing+=("$cmd")
 done
 
