@@ -65,7 +65,7 @@ Requirements for this milestone. AIDE infrastructure is the top priority — it 
 |-------------|-------|--------|
 | AIDE-01 | Phase 1 | Complete |
 | AIDE-02 | Phase 1 | Complete |
-| AIDE-04 | Phase 1 | Pending |
+| AIDE-04 | Phase 1 | Complete |
 | AIDE-03 | Phase 2 | Pending |
 | AIDE-05 | Phase 3 | Pending |
 | REGR-01 | Phase 4 | Pending |
