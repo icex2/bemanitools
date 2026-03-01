@@ -63,28 +63,28 @@ Requirements for this milestone. AIDE infrastructure is the top priority — it 
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AIDE-01 | — | Pending |
-| AIDE-02 | — | Pending |
-| AIDE-03 | — | Pending |
-| AIDE-04 | — | Pending |
-| AIDE-05 | — | Pending |
-| REGR-01 | — | Pending |
-| REGR-02 | — | Pending |
-| REGR-03 | — | Pending |
-| BUGF-01 | — | Pending |
-| BUGF-02 | — | Pending |
-| BUGF-03 | — | Pending |
-| CONT-01 | — | Pending |
-| CONT-02 | — | Pending |
-| CONT-03 | — | Pending |
-| TRIA-01 | — | Pending |
-| TRIA-02 | — | Pending |
+| AIDE-01 | Phase 1 | Pending |
+| AIDE-02 | Phase 1 | Pending |
+| AIDE-04 | Phase 1 | Pending |
+| AIDE-03 | Phase 2 | Pending |
+| AIDE-05 | Phase 3 | Pending |
+| REGR-01 | Phase 4 | Pending |
+| REGR-02 | Phase 4 | Pending |
+| REGR-03 | Phase 4 | Pending |
+| BUGF-01 | Phase 5 | Pending |
+| BUGF-02 | Phase 5 | Pending |
+| BUGF-03 | Phase 5 | Pending |
+| CONT-01 | Phase 5 | Pending |
+| CONT-02 | Phase 5 | Pending |
+| CONT-03 | Phase 5 | Pending |
+| TRIA-01 | Phase 6 | Pending |
+| TRIA-02 | Phase 6 | Pending |
 
 **Coverage:**
 - v1 requirements: 16 total
-- Mapped to phases: 0
-- Unmapped: 16 ⚠️
+- Mapped to phases: 16
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-01*
-*Last updated: 2026-03-01 after initial definition*
+*Last updated: 2026-03-01 after roadmap creation*
