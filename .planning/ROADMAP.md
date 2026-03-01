@@ -31,7 +31,9 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. An agent starting a fresh session can orient to the codebase — which modules are isolated vs injected, which have test coverage — by reading a single reference file
   4. CLAUDE.md constrains agents to BT5 scope, Win32 calling conventions, and correct test patterns before any code generation
   5. Existing unit tests can be run under Wine and all pass
-**Plans**: TBD
+**Plans**: 2 plans
+- [ ] 01-01-PLAN.md — Verification script (aide-verify.sh) and CI Wine integration
+- [ ] 01-02-PLAN.md — Agent reference doc and project CLAUDE.md
 
 ### Phase 2: Protocol Reference and Emulator Tests
 **Goal**: Agents have ground-truth protocol reference material and automated correctness signals for the hardware emulator tier
@@ -93,7 +95,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Agent Foundation | 0/TBD | Not started | - |
+| 1. Agent Foundation | 0/2 | Planned | - |
 | 2. Protocol Reference and Emulator Tests | 0/TBD | Not started | - |
 | 3. Ghidra RE Integration | 0/TBD | Not started | - |
 | 4. Regressions | 0/TBD | Not started | - |
