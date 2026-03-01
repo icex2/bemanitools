@@ -205,6 +205,7 @@ include src/main/vigem-sdvxio/Module.mk
 include src/main/vigem-ddrio/Module.mk
 include src/main/vigemstub/Module.mk
 
+include src/test/acioemu/Module.mk
 include src/test/cconfig/Module.mk
 include src/test/d3d9hook/Module.mk
 include src/test/iidxhook-util/Module.mk
@@ -828,6 +829,7 @@ $(zipdir)/doc.zip: \
 $(BUILDDIR)/tests.zip: \
 		build/bin/indep-32/iidxhook1.dll \
 		build/bin/avs2_0-32/iidxhook2.dll \
+		build/bin/indep-32/acioemu-pipe-test.exe \
 		build/bin/indep-32/cconfig-test.exe \
 		build/bin/indep-32/cconfig-util-test.exe \
 		build/bin/indep-32/cconfig-cmd-test.exe \

@@ -8,6 +8,7 @@ cd $DIR
 
 echo "Running tests..."
 
+wine ./acioemu-pipe-test.exe
 wine ./cconfig-test.exe
 wine ./cconfig-util-test.exe
 wine ./cconfig-cmd-test.exe
